@@ -1,0 +1,277 @@
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --ink: #111111;
+    --paper: #ffffff;
+    --paper-2: #f8f8f8;
+    --paper-3: #eeeeee;
+    --yellow: #FFD000;
+    --yellow-dark: #c9a500;
+    --coral: #FF4D4D;
+    --cobalt: #0055FF;
+    --mint: #00C68E;
+    --purple: #7C3AED;
+    --border: 2.5px solid #111111;
+    --border-thick: 3.5px solid #111111;
+    --shadow-sm: 3px 3px 0px #111111;
+    --shadow: 5px 5px 0px #111111;
+    --shadow-lg: 7px 7px 0px #111111;
+    --shadow-xl: 10px 10px 0px #111111;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    font-feature-settings: "cv02", "cv03", "cv04";
+    background-color: var(--paper);
+  }
+
+  body {
+    background-color: var(--paper);
+    color: var(--ink);
+    overflow-x: hidden;
+    font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  .tabular-nums { font-variant-numeric: tabular-nums; }
+}
+
+/* Lenis */
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-stopped { overflow: hidden; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--paper-2); border-left: 2.5px solid var(--ink); }
+::-webkit-scrollbar-thumb { background: var(--ink); border-radius: 0; }
+
+/* ─────────────────────────────────────────
+   Neobrutalism Component Utilities
+───────────────────────────────────────── */
+@layer components {
+
+  /* Core border + shadow combo */
+  .nb {
+    border: var(--border);
+    box-shadow: var(--shadow);
+  }
+  .nb-thick {
+    border: var(--border-thick);
+    box-shadow: var(--shadow-lg);
+  }
+  .nb-sm {
+    border: var(--border);
+    box-shadow: var(--shadow-sm);
+  }
+  .nb-xl {
+    border: var(--border-thick);
+    box-shadow: var(--shadow-xl);
+  }
+
+  /* Hover lift */
+  .nb-lift {
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+  }
+  .nb-lift:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: var(--shadow-lg);
+  }
+  .nb-lift:active {
+    transform: translate(2px, 2px);
+    box-shadow: none;
+  }
+
+  /* Button base */
+  .btn {
+    border: var(--border);
+    box-shadow: var(--shadow);
+    font-weight: 800;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.625rem 1.375rem;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+    white-space: nowrap;
+    text-decoration: none;
+    letter-spacing: -0.01em;
+  }
+  .btn:hover { transform: translate(-2px, -2px); box-shadow: var(--shadow-lg); }
+  .btn:active { transform: translate(2px, 2px); box-shadow: none; }
+
+  .btn-yellow  { background: var(--yellow);  color: var(--ink); }
+  .btn-coral   { background: var(--coral);   color: #fff; }
+  .btn-cobalt  { background: var(--cobalt);  color: #fff; }
+  .btn-ink     { background: var(--ink);     color: var(--paper); }
+  .btn-paper   { background: var(--paper);   color: var(--ink); }
+  .btn-mint    { background: var(--mint);    color: var(--ink); }
+
+  /* Tag / badge */
+  .tag {
+    border: var(--border);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 0.2rem 0.55rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    display: inline-block;
+    background: var(--paper);
+  }
+  .tag-yellow  { background: var(--yellow);  color: var(--ink); border-color: var(--yellow-dark); }
+  .tag-coral   { background: var(--coral);   color: #fff; }
+  .tag-cobalt  { background: var(--cobalt);  color: #fff; }
+  .tag-ink     { background: var(--ink);     color: var(--paper); }
+  .tag-mint    { background: var(--mint);    color: var(--ink); }
+
+  /* Sticker — rotated label untuk karakter neobrutalist */
+  .sticker {
+    border: var(--border-thick);
+    box-shadow: var(--shadow);
+    font-weight: 900;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+  .sticker-yellow { background: var(--yellow); color: var(--ink); }
+  .sticker-coral  { background: var(--coral);  color: #fff; }
+  .sticker-cobalt { background: var(--cobalt); color: #fff; }
+  .sticker-mint   { background: var(--mint);   color: var(--ink); }
+  .sticker-ink    { background: var(--ink);    color: var(--paper); }
+
+  /* Card */
+  .card {
+    border: var(--border);
+    box-shadow: var(--shadow);
+    background: var(--paper);
+  }
+  .card-yellow { background: var(--yellow); }
+  .card-coral  { background: var(--coral);  color: #fff; }
+  .card-cobalt { background: var(--cobalt); color: #fff; }
+  .card-mint   { background: #d4f7ee; }
+  .card-ink    { background: var(--ink);    color: var(--paper); }
+
+  /* Stripe diagonal */
+  .stripe-y {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      transparent, transparent 5px,
+      rgba(17,17,17,0.07) 5px, rgba(17,17,17,0.07) 10px
+    );
+  }
+  .stripe-coral {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      transparent, transparent 5px,
+      rgba(255,77,77,0.12) 5px, rgba(255,77,77,0.12) 10px
+    );
+  }
+
+  /* Section divider: thick horizontal line */
+  .section-divider {
+    border-top: 3px solid var(--ink);
+  }
+
+  /* Oversized decorative number */
+  .deco-num {
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-weight: 900;
+    color: var(--ink);
+    opacity: 0.06;
+    line-height: 1;
+    user-select: none;
+    pointer-events: none;
+    position: absolute;
+  }
+
+  /* Rotated label — karakter neobrutalist */
+  .rotated-label {
+    transform: rotate(-3deg);
+    display: inline-block;
+  }
+  .rotated-label-2 {
+    transform: rotate(2.5deg);
+    display: inline-block;
+  }
+
+  /* Highlight underline (yellow fill) */
+  .highlight {
+    position: relative;
+    display: inline;
+  }
+  .highlight::after {
+    content: '';
+    position: absolute;
+    bottom: 0.05em;
+    left: -0.05em;
+    right: -0.05em;
+    height: 0.35em;
+    background: var(--yellow);
+    z-index: -1;
+  }
+  .highlight-coral::after  { background: var(--coral);  opacity: 0.35; }
+  .highlight-cobalt::after { background: var(--cobalt); opacity: 0.25; }
+  .highlight-mint::after   { background: var(--mint);   opacity: 0.35; }
+
+  /* Invert Hover Effects */
+  .hover-invert {
+    transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .hover-invert:hover {
+    background-color: var(--ink) !important;
+    color: #ffffff !important;
+  }
+  .hover-invert:hover * {
+    color: inherit;
+  }
+
+  .hover-invert-yellow {
+    transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .hover-invert-yellow:hover {
+    background-color: var(--yellow) !important;
+    color: var(--ink) !important;
+  }
+
+  .hover-invert-coral {
+    transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .hover-invert-coral:hover {
+    background-color: var(--coral) !important;
+    color: #ffffff !important;
+  }
+}
+
+/* 3D perspective */
+.perspective-1000 { perspective: 1000px; }
+.perspective-2000 { perspective: 2000px; }
+.transform-style-3d { transform-style: preserve-3d; }
+
+/* Focus */
+*:focus-visible {
+  outline: 3px solid var(--cobalt);
+  outline-offset: 2px;
+}
+
+@layer utilities {
+  .bg-paper { background-color: var(--paper) !important; }
+  .bg-paper-2 { background-color: var(--paper-2) !important; }
+  .bg-paper-3 { background-color: var(--paper-3) !important; }
+}
+
+/* Unpurged guaranteed theme background & foreground utilities */
+.bg-theme-yellow { background-color: var(--yellow) !important; color: var(--ink) !important; }
+.bg-theme-coral  { background-color: var(--coral) !important; color: #ffffff !important; }
+.bg-theme-cobalt { background-color: var(--cobalt) !important; color: #ffffff !important; }
+.bg-theme-mint   { background-color: var(--mint) !important; color: var(--ink) !important; }
+.bg-theme-ink    { background-color: var(--ink) !important; color: var(--paper) !important; }
+

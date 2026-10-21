@@ -1,0 +1,60 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id           String             @id @default(uuid())
+  name         String
+  email        String             @unique
+  passwordHash String?
+  role         String             @default("student")
+  createdAt    DateTime           @default(now())
+  progress     UserProgress[]
+  telemetries  SessionTelemetry[]
+}
+
+model SibiAlphabet {
+  id                Int            @id @default(autoincrement())
+  letter            String         @unique
+  gestureType       String         // "static" (A-I, K-Y) atau "dynamic" (J, Z)
+  description       String
+  referenceImageUrl String?
+  difficulty        String         @default("easy")
+  tips              String?
+  progress          UserProgress[]
+}
+
+model UserProgress {
+  id             Int          @id @default(autoincrement())
+  userId         String
+  alphabetId     Int
+  isMastered     Boolean      @default(false)
+  bestConfidence Float        @default(0)
+  attemptsCount  Int          @default(0)
+  updatedAt      DateTime     @updatedAt
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  alphabet       SibiAlphabet @relation(fields: [alphabetId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, alphabetId])
+}
+
+model SessionTelemetry {
+  id             Int      @id @default(autoincrement())
+  userId         String?
+  sessionType    String   // "practice" | "narrative" | "quiz"
+  targetLabel    String?
+  predictedLabel String?
+  confidence     Float
+  latencyMs      Float
+  fps            Float
+  lightingCond   String?
+  isSuccess      Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  user           User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
