@@ -16,9 +16,9 @@ export function App() {
   const modelHook = useSibiModel({
     modelPath: "/model/model.json",
     labelsPath: "/model/labels.json",
-    imgSize: 224,
-    defaultChannelMode: "rgb",
-    confidenceThreshold: 75,
+    imgSize: 150,
+    defaultChannelMode: "grayscale",
+    confidenceThreshold: 70,
     holdDurationMs: 1500,
   });
 
@@ -60,19 +60,19 @@ export function App() {
                     </span>
                   </div>
                   <p className="font-sans text-xs text-ink/70 max-w-sm font-medium leading-relaxed">
-                    Aplikasi interaktif belajar bahasa isyarat SIBI berbasis kecerdasan buatan dan visi komputer langsung dari peramban. Belajar isyarat jadi menyenangkan dan mudah diakses siapa saja!
+                    Platform pembelajaran Sistem Isyarat Bahasa Indonesia (SIBI) 26 alfabet berbasis computer vision dan inferensi lokal di browser.
                   </p>
                   <div className="flex flex-wrap gap-2 pt-1">
                     <span className="tag tag-yellow text-[9px]">26 Huruf SIBI</span>
-                    <span className="tag tag-mint text-[9px]">Deteksi Real-Time</span>
-                    <span className="tag tag-cobalt text-[9px]">Text-to-Speech</span>
+                    <span className="tag tag-mint text-[9px]">Inferensi 20-30 FPS</span>
+                    <span className="tag tag-cobalt text-[9px]">Sintesis Suara id-ID</span>
                   </div>
                 </div>
 
                 {/* Nav Links Grid */}
                 <div className="md:col-span-7 flex flex-wrap gap-x-8 gap-y-4 md:justify-end items-center">
                   {[
-                    { label: "Kamus Isyarat (A–Z)", path: "/kamus" },
+                    { label: "Kamus Isyarat (A sampai Z)", path: "/kamus" },
                     { label: "Latihan Kamera", path: "/latihan" },
                     { label: "Studio Narasi", path: "/narasi" },
                     { label: "Kuis Eja Cepat", path: "/kuis" },

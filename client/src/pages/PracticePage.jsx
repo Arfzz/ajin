@@ -88,17 +88,17 @@ export const PracticePage = ({ modelHook }) => {
           <div>
             <div className="flex flex-wrap items-center gap-2 mb-2">
               <span className="sticker sticker-yellow px-2.5 py-0.5 text-xs font-mono uppercase rotated-label">
-                🥋 Dojo Latihan
+                🥋 Dojo Latihan SIBI
               </span>
               <span className="sticker sticker-cobalt px-2.5 py-0.5 text-xs font-mono uppercase">
-                ⚡ Real-Time Feedback
+                ⚡ Umpan Balik Kamera Langsung
               </span>
             </div>
             <h1 className="font-display font-black text-3xl sm:text-4xl text-ink tracking-tight">
-              Latihan Mandiri <span className="highlight">Huruf {currentAlphabet.letter}</span>
+              Latihan Mandiri: <span className="highlight">Huruf {currentAlphabet.letter}</span>
             </h1>
             <p className="font-sans text-xs sm:text-sm text-ink/70 font-medium mt-1">
-              Bentuk tanganmu di depan kamera sesuai panduan visual, tahan selama 1.5 detik sampai terdeteksi!
+              Posisikan tangan di depan kamera sesuai panduan visual. Tahan gestur stabil selama 1,5 detik hingga indikator hijau terkunci.
             </p>
           </div>
 
@@ -262,11 +262,11 @@ export const PracticePage = ({ modelHook }) => {
                 <span className="tag tag-ink text-[10px]">STATUS:</span>
                 {modelHook.telemetry.predictedLetter === currentAlphabet.letter ? (
                   <span className="font-bold text-mint flex items-center gap-1 text-sm">
-                    <CheckCircle2 className="w-4 h-4" /> Isyarat Cocok! Tahan 1.5 detik untuk mengunci poin!
+                    <CheckCircle2 className="w-4 h-4" /> Gestur cocok! Tahan posisi stabil untuk mengunci huruf.
                   </span>
                 ) : (
                   <span className="text-ink/80 font-bold">
-                    Arahkan tangan membentuk huruf <strong className="text-coral underline font-black">{currentAlphabet.letter}</strong> ke dalam kotak deteksi.
+                    Bentuk huruf <strong className="text-coral underline font-black">{currentAlphabet.letter}</strong> di dalam kotak panduan kamera.
                   </span>
                 )}
               </div>

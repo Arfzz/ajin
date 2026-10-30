@@ -155,18 +155,18 @@ export const WebcamCanvas = ({
               <CameraOff className="w-8 h-8" />
             </div>
             <h4 className="font-display font-black text-ink text-lg">
-              {cameraError ? "Webcam Tidak Dapat Diakses" : "Webcam Sedang Mati"}
+              {cameraError ? "Webcam Belum Terhubung" : "Kamera Belum Aktif"}
             </h4>
             <p className="text-xs font-sans text-ink/70 max-w-sm mt-1.5 mb-5 font-medium leading-relaxed">
               {cameraError ||
-                "Nyalakan izin kamera peramban untuk mendeteksi gerakan tanganmu secara real-time, atau gunakan Mode Simulasi di bawah."}
+                "Izinkan akses webcam pada browsermu untuk mendeteksi posisi jemari secara langsung, atau pilih Mode Simulasi di bawah."}
             </p>
             <button
               onClick={startCamera}
               className="btn btn-yellow text-xs font-mono py-2.5 px-4 flex items-center gap-2"
             >
               <RefreshCw className="w-3.5 h-3.5" />
-              Nyalakan Ulang Kamera
+              Aktifkan Kamera
             </button>
           </div>
         )}
@@ -244,7 +244,7 @@ export const WebcamCanvas = ({
         <div className="absolute top-3 left-3 z-30 flex items-center gap-2">
           <span className="sticker sticker-mint text-[10px] font-mono px-2 py-0.5 shadow-[2px_2px_0_#111]">
             <span className="w-2 h-2 rounded-full bg-ink inline-block mr-1.5 animate-pulse" />
-            {cameraActive ? "KAMERA AKTIF (640x480)" : "KAMERA OFF"}
+            {cameraActive ? "KAMERA AKTIF (640x480)" : "KAMERA NONAKTIF"}
           </span>
         </div>
 
@@ -271,7 +271,7 @@ export const WebcamCanvas = ({
               onClick={() => setIsMirrored(!isMirrored)}
               className="btn bg-paper-2 hover:bg-paper-3 text-[11px] font-mono py-1.5 px-3"
             >
-              Mirror: {isMirrored ? "ON" : "OFF"}
+              Cermin: {isMirrored ? "AKTIF" : "NONAKTIF"}
             </button>
 
             <button
@@ -283,7 +283,7 @@ export const WebcamCanvas = ({
               }`}
               title="Sesuaikan channel warna dengan dataset latih"
             >
-              Channel: {channelMode.toUpperCase()}
+              Warna: {channelMode.toUpperCase()}
             </button>
 
             <button
@@ -292,7 +292,7 @@ export const WebcamCanvas = ({
                 useRoiCrop ? "btn-cobalt" : "bg-paper-2 hover:bg-paper-3"
               }`}
             >
-              ROI Box: {useRoiCrop ? "ON" : "OFF"}
+              Area ROI: {useRoiCrop ? "AKTIF" : "NONAKTIF"}
             </button>
           </div>
 

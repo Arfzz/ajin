@@ -72,7 +72,7 @@ export const Navbar = ({ isSimulationMode = true }) => {
                   : "border-ink/20 text-ink/40"
               }`}
             >
-              {isSimulationMode ? "sim" : "live"}
+              {isSimulationMode ? "simulasi" : "live cv"}
             </span>
           </Link>
 
@@ -111,7 +111,7 @@ export const Navbar = ({ isSimulationMode = true }) => {
               }`}
             >
               <Camera className="w-3.5 h-3.5 mr-1.5" aria-hidden="true" />
-              Buka Kamera
+              Latih di Kamera
             </Link>
           </div>
 
@@ -168,7 +168,7 @@ export const Navbar = ({ isSimulationMode = true }) => {
                 }`}
               >
                 <Camera className="w-4 h-4 mr-2" aria-hidden="true" />
-                Coba Kamera Sekarang
+                Mulai Latihan di Kamera
               </Link>
             </div>
           </nav>

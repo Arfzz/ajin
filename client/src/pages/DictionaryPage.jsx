@@ -32,10 +32,10 @@ const cardVariants = {
 
 const FILTERS = [
   { key: "all", label: "Semua Huruf", count: 26, color: "btn-ink" },
-  { key: "static", label: "✋ Statis", count: 24, color: "btn-cobalt" },
-  { key: "dynamic", label: "💫 Gerak (J & Z)", count: 2, color: "btn-yellow" },
+  { key: "static", label: "✋ Gestur Statis", count: 24, color: "btn-cobalt" },
+  { key: "dynamic", label: "💫 Gerak Dinamis (J & Z)", count: 2, color: "btn-yellow" },
   { key: "attention", label: "👀 Mirip & Rawan Tertukar", count: 7, color: "btn-coral" },
-  { key: "vowels", label: "🔤 Vokal (A-I-U-E-O)", count: 5, color: "btn-mint" },
+  { key: "vowels", label: "🔤 Huruf Vokal (A-I-U-E-O)", count: 5, color: "btn-mint" },
 ];
 
 const ATTENTION_LETTERS = ["K", "Y", "V", "P", "M", "N", "S"];
@@ -108,8 +108,7 @@ export const DictionaryPage = () => {
                 Kamus Isyarat <span className="highlight">A sampai Z</span>
               </h1>
               <p className="mt-3 font-sans text-base text-ink/70 max-w-xl font-medium leading-relaxed">
-                Pelajari bentuk jemari dan orientasi tangan untuk setiap huruf. Klik kartu mana saja
-                untuk lihat video simulasi gerakan dan langsung uji di kamera!
+                Pelajari posisi jemari dan orientasi telapak tangan untuk 26 alfabet SIBI. Pilih kartu huruf untuk melihat simulasi gerakan dan langsung menguji akurasinya di depan webcam.
               </p>
             </div>
 
@@ -123,7 +122,7 @@ export const DictionaryPage = () => {
                 <input
                   id="search-alphabet"
                   type="search"
-                  placeholder="Ketik huruf 'A', 'Kelingking'..."
+                  placeholder="Ketik huruf 'A', 'Kelingking' atau 'Dinamis'..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-10 py-3 border-[2.5px] border-ink bg-paper text-sm font-bold text-ink placeholder-ink/40 focus:outline-none shadow-[3px_3px_0_#111]"
@@ -263,7 +262,7 @@ export const DictionaryPage = () => {
                       className="btn bg-paper-2 hover:bg-paper-3 text-ink text-xs font-mono py-2 px-2"
                       aria-label={`Buka panduan huruf ${item.letter}`}
                     >
-                      Panduan 📖
+                      Lihat Bentuk 📖
                     </button>
                     <Link
                       to={`/latihan?letter=${item.letter}`}
@@ -271,7 +270,7 @@ export const DictionaryPage = () => {
                       aria-label={`Latih huruf ${item.letter} di kamera`}
                     >
                       <Camera className="w-3.5 h-3.5" />
-                      Tes Huruf
+                      Uji di Kamera
                     </Link>
                   </div>
                 </motion.div>
@@ -285,10 +284,10 @@ export const DictionaryPage = () => {
               ?
             </div>
             <h3 className="font-display font-black text-2xl text-ink mb-2">
-              Huruf &ldquo;{searchQuery}&rdquo; Tidak Ditemukan!
+              Huruf &ldquo;{searchQuery}&rdquo; Tidak Ditemukan
             </h3>
             <p className="font-sans text-sm text-ink/70 mb-6">
-              Tidak ada huruf yang cocok dengan pencarianmu. Coba kata kunci lain atau reset filter untuk kembali ke 26 alfabet lengkap.
+              Tidak ada huruf alfabet yang sesuai dengan kata kunci pencarian. Coba kata kunci lain atau tampilkan seluruh 26 huruf SIBI.
             </p>
             <button
               onClick={() => {
@@ -328,7 +327,7 @@ export const DictionaryPage = () => {
                     Panduan Huruf {selectedAlphabet.letter}
                   </h3>
                   <span className="font-mono text-xs font-bold text-ink/70 uppercase">
-                    {selectedAlphabet.gestureType === "dynamic" ? "Gerak Dinamis (J/Z)" : "Gestur Statis"}
+                    {selectedAlphabet.gestureType === "dynamic" ? "Gerak Dinamis (Lintasan J & Z)" : "Gestur Statis"}
                   </span>
                 </div>
               </div>
@@ -349,7 +348,7 @@ export const DictionaryPage = () => {
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-mono font-bold uppercase tracking-wider text-ink/70 flex items-center gap-1.5">
                     <Hand className="w-4 h-4 text-cobalt" />
-                    Simulasi Bentuk Tangan:
+                    Simulasi Posisi Jemari:
                   </span>
                   <span className="tag tag-yellow text-[10px]">
                     Tingkat: {selectedAlphabet.difficulty}
@@ -368,7 +367,7 @@ export const DictionaryPage = () => {
               <div>
                 <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-ink/70 mb-2 flex items-center gap-1.5">
                   <Compass className="w-4 h-4 text-coral" />
-                  Instruksi Pembentukan Jemari:
+                  Cara Membentuk Tangan:
                 </h4>
                 <div className="p-4 bg-paper-2 border-[2px] border-ink text-sm font-sans font-medium text-ink leading-relaxed">
                   {selectedAlphabet.description}
@@ -381,7 +380,7 @@ export const DictionaryPage = () => {
                   <span className="text-xl">💡</span>
                   <div>
                     <h5 className="font-mono text-xs font-bold uppercase text-ink mb-1">
-                      Tips Orientasi & Supaya Tidak Tertukar:
+                      Tips Orientasi &amp; Supaya Tidak Tertukar:
                     </h5>
                     <p className="font-sans text-xs text-ink/80 leading-relaxed font-medium">
                       {selectedAlphabet.tips}
@@ -405,7 +404,7 @@ export const DictionaryPage = () => {
                 className="btn btn-coral text-xs font-mono py-2.5 px-5 flex items-center gap-2 shadow-[4px_4px_0_#111]"
               >
                 <Camera className="w-4 h-4" />
-                <span>Mulai Tes Huruf Ini di Kamera!</span>
+                <span>Uji Huruf Ini di Kamera</span>
                 <ArrowUpRight className="w-4 h-4" />
               </Link>
             </div>

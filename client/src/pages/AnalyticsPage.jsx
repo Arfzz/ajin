@@ -61,17 +61,17 @@ export const AnalyticsPage = () => {
           <div>
             <div className="flex flex-wrap items-center gap-2 mb-2">
               <span className="sticker sticker-yellow px-2.5 py-0.5 text-xs font-mono uppercase rotated-label">
-                📊 Rapor Belajar Kamu
+                📊 Rapor Belajar SIBI
               </span>
               <span className="sticker sticker-mint px-2.5 py-0.5 text-xs font-mono uppercase">
-                🔥 Progress Tracker
+                🎯 Evaluasi Akurasi
               </span>
             </div>
             <h1 className="font-display font-black text-3xl sm:text-4xl text-ink tracking-tight">
-              Dashboard Progres & <span className="highlight">Keahlian Isyarat</span>
+              Dashboard Progres &amp; <span className="highlight">Kemahiran SIBI</span>
             </h1>
             <p className="font-sans text-xs sm:text-sm text-ink/70 font-medium mt-1">
-              Pantau jam terbang latihanmu, cek akurasi deteksi tangan, dan lihat huruf apa saja yang sudah kamu kuasai!
+              Pantau total sesi latihan, evaluasi akurasi per huruf alfabet, dan unduh data performa belajar dalam format CSV.
             </p>
           </div>
 
@@ -123,7 +123,7 @@ export const AnalyticsPage = () => {
             <div className="card p-5 bg-paper flex flex-col justify-between nb-lift">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-mono uppercase font-bold tracking-wider text-ink/60">
-                  Total Isyarat Dites
+                  Total Isyarat Diuji
                 </span>
                 <BarChart3 className="w-5 h-5 text-cobalt" />
               </div>
@@ -134,7 +134,7 @@ export const AnalyticsPage = () => {
                 <span className="text-sm font-mono text-ink/60 ml-1">kali</span>
               </div>
               <span className="text-xs font-mono text-ink/60 mt-3 pt-2 border-t border-ink/15">
-                Tingkat sukses rata-rata: {data.successRate}%
+                Tingkat keberhasilan: {data.successRate}%
               </span>
             </div>
 
@@ -153,7 +153,7 @@ export const AnalyticsPage = () => {
                 <span className="text-sm font-mono text-ink/60 ml-1">%</span>
               </div>
               <span className="text-xs font-mono text-ink/60 mt-3 pt-2 border-t border-ink/15">
-                Keyakinan deteksi isyarat kamera
+                Rata-rata keyakinan pengenalan gestur
               </span>
             </div>
 
@@ -172,7 +172,7 @@ export const AnalyticsPage = () => {
                 <span className="text-sm font-mono text-ink/60 ml-1">ms ({data.avgFps} FPS)</span>
               </div>
               <span className="text-xs font-mono text-ink/60 mt-3 pt-2 border-t border-ink/15">
-                Respon inferensi instan peramban
+                Inferensi instan browser (TensorFlow.js)
               </span>
             </div>
           </div>
@@ -189,7 +189,7 @@ export const AnalyticsPage = () => {
                 </h3>
               </div>
               <p className="text-xs font-sans text-ink/60">
-                Klik kartu huruf mana saja untuk langsung melatihnya di depan kamera.
+                Pilih kartu huruf mana saja untuk langsung melatihnya di depan webcam.
               </p>
             </div>
 
@@ -251,7 +251,7 @@ export const AnalyticsPage = () => {
                 Tabel Rincian Hasil Latihan per Huruf
               </h3>
               <p className="text-xs font-mono text-ink/60">
-                Data rekaman sesi interaktif kamu selama menggunakan AJIN.
+                Catatan historis dari sesi latihan dan kuis mandirimu di AJIN.
               </p>
             </div>
             <Link
@@ -268,10 +268,10 @@ export const AnalyticsPage = () => {
               <thead className="bg-paper-2 text-xs font-mono font-bold text-ink uppercase border-b-2 border-ink">
                 <tr>
                   <th className="px-6 py-3.5">Huruf SIBI</th>
-                  <th className="px-6 py-3.5">Jumlah Sesi Dicoba</th>
-                  <th className="px-6 py-3.5">Akurasi Gerakan</th>
+                  <th className="px-6 py-3.5">Frekuensi Latihan</th>
+                  <th className="px-6 py-3.5">Akurasi Keberhasilan</th>
                   <th className="px-6 py-3.5">Keyakinan Rata-Rata</th>
-                  <th className="px-6 py-3.5">Status Penguasaan</th>
+                  <th className="px-6 py-3.5">Tingkat Kemahiran</th>
                   <th className="px-6 py-3.5 text-right">Aksi</th>
                 </tr>
               </thead>
@@ -322,9 +322,9 @@ export const AnalyticsPage = () => {
                   <tr>
                     <td colSpan={6} className="px-6 py-12 text-center text-ink/60 font-sans text-xs">
                       <p className="font-bold text-sm text-ink mb-1">Belum Ada Sesi Latihan yang Tercatat</p>
-                      <p className="mb-4">Buka halaman Latihan Kamera atau Kuis untuk mulai merekam progres belajarmu.</p>
+                      <p className="mb-4">Buka halaman Latihan Kamera atau Kuis Eja untuk mulai merekam progres belajarmu.</p>
                       <Link to="/latihan" className="btn btn-yellow text-xs font-mono py-2 px-4">
-                        Mulai Latihan Sekarang
+                        Mulai Sesi Latihan Baru
                       </Link>
                     </td>
                   </tr>

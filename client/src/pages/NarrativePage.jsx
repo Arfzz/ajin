@@ -167,17 +167,17 @@ export const NarrativePage = ({ modelHook }) => {
           <div>
             <div className="flex flex-wrap items-center gap-2 mb-2">
               <span className="sticker sticker-cobalt px-2.5 py-0.5 text-xs font-mono uppercase rotated-label">
-                🗣️ Isyarat ke Suara
+                🗣️ Jembatan Isyarat ke Suara
               </span>
               <span className="sticker sticker-yellow px-2.5 py-0.5 text-xs font-mono uppercase">
-                ⚡ Text-to-Speech id-ID
+                ⚡ Sintesis Audio Bahasa Indonesia
               </span>
             </div>
             <h1 className="font-display font-black text-3xl sm:text-4xl text-ink tracking-tight">
-              Studio Narasi <span className="highlight">Rangkai Kalimat</span>
+              Studio Narasi: <span className="highlight">Rangkai Kalimat</span>
             </h1>
             <p className="font-sans text-xs sm:text-sm text-ink/70 font-medium mt-1">
-              Bentuk isyarat huruf demi huruf di kamera untuk merangkai kata, lalu tekan tombol Suara untuk membacanya otomatis!
+              Bentuk isyarat huruf demi huruf di depan kamera untuk menyusun kata dan kalimat, lalu dengarkan pelafalannya secara otomatis dalam bahasa Indonesia.
             </p>
           </div>
 
@@ -188,7 +188,7 @@ export const NarrativePage = ({ modelHook }) => {
               className="btn btn-yellow text-xs font-mono py-3 px-5 flex items-center gap-2 shadow-[4px_4px_0_#111] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Volume2 className="w-4 h-4" />
-              <span>{isSpeaking ? "Sedang Bersuara..." : "Suarakan Teks (Enter)"}</span>
+              <span>{isSpeaking ? "Sedang Membaca..." : "Suarakan Kalimat (Enter)"}</span>
             </button>
           </div>
         </div>
@@ -204,7 +204,7 @@ export const NarrativePage = ({ modelHook }) => {
                 <div className="flex items-center justify-between border-b-2 border-ink pb-3 mb-4">
                   <div className="flex items-center gap-2">
                     <span className="tag tag-yellow text-[10px]">
-                      PAPAN CERITA & SUARA
+                      PAPAN NARASI &amp; SUARA
                     </span>
                     {lastAddedLetter && (
                       <span className="sticker sticker-coral text-[10px] px-1.5 py-0.2">
@@ -226,7 +226,7 @@ export const NarrativePage = ({ modelHook }) => {
                   ) : (
                     <div className="p-4 bg-paper-2 border-2 border-dashed border-ink/30 text-ink/50 text-sm font-sans font-medium">
                       👋 Belum ada teks. Arahkan isyarat tanganmu ke kamera di sebelah kanan.
-                      Tahan posisi tangan 1.5 detik untuk mengetikkan huruf ke papan ini!
+                      Tahan gestur selama 1,5 detik untuk mengetikkan huruf ke papan ini.
                     </div>
                   )}
                 </div>
@@ -274,7 +274,7 @@ export const NarrativePage = ({ modelHook }) => {
 
                 {/* Keyboard Shortcut Hints */}
                 <div className="flex flex-wrap items-center justify-between text-[11px] font-mono text-ink/60 pt-2 border-t border-ink/15">
-                  <span>Pintasan: Space (Spasi) • Backspace (Hapus) • Enter (Suara)</span>
+                  <span>Pintasan Keyboard: Spasi (Space) • Hapus (Backspace) • Suara (Enter)</span>
                   {lastAddedLetter && (
                     <span className="font-bold text-coral">
                       Terakhir: [{lastAddedLetter}]
@@ -322,8 +322,8 @@ export const NarrativePage = ({ modelHook }) => {
             />
 
             <div className="p-3 bg-paper-2 border border-ink text-xs font-mono text-ink/70 flex items-center justify-between">
-              <span>Status Suara: {isSpeaking ? "🔊 Membaca Teks..." : "Siap Bersuara"}</span>
-              <span className="tag tag-mint text-[10px]">Speech Engine id-ID</span>
+              <span>Status Suara: {isSpeaking ? "🔊 Membaca Kalimat..." : "Siap Bersuara"}</span>
+              <span className="tag tag-mint text-[10px]">Sintesis Suara id-ID</span>
             </div>
           </div>
         </div>

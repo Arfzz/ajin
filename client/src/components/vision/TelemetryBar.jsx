@@ -23,7 +23,7 @@ export const TelemetryBar = ({
       {/* Status + mode */}
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2">
-          {/* Status indicator — hanya muncul ketika ada state real */}
+          {/* Status indicator: hanya muncul ketika ada state real */}
           <span
             className={`w-2 h-2 ${
               isLocked ? "bg-cv-locked" : isHolding ? "bg-cv-holding" : "bg-paper/30"
@@ -34,14 +34,14 @@ export const TelemetryBar = ({
             {isLocked
               ? "Gestur Terkunci"
               : isHolding
-              ? "Menahan Isyarat..."
-              : "Memindai Tangan"}
+              ? "Menahan Gestur (1,5 Detik)..."
+              : "Memindai Gestur Tangan"}
           </span>
         </div>
 
         {isSimulationMode && (
           <span className="border border-paper/20 text-paper/40 px-2 py-0.5 text-[10px] uppercase tracking-wider">
-            Sim Mode
+            Mode Simulasi
           </span>
         )}
       </div>

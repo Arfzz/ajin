@@ -114,14 +114,14 @@ export const QuizPage = ({ modelHook }) => {
                 🎯 Mode Tantangan
               </span>
               <span className="sticker sticker-yellow px-2.5 py-0.5 text-xs font-mono uppercase">
-                ⚡ Eja Cepat
+                ⚡ Eja Kosakata SIBI
               </span>
             </div>
             <h1 className="font-display font-black text-3xl sm:text-4xl text-ink tracking-tight">
-              Arena Kuis <span className="highlight">Eja Kata SIBI</span>
+              Arena Kuis: <span className="highlight">Eja Kata SIBI</span>
             </h1>
             <p className="font-sans text-xs sm:text-sm text-ink/70 font-medium mt-1">
-              Bentuk setiap huruf sesuai urutan kata di bawah ini. Selesaikan seluruh kata secepat mungkin!
+              Bentuk setiap huruf sesuai urutan kata target di depan kamera. Selesaikan seluruh kata secepat dan seakurat mungkin!
             </p>
           </div>
 
@@ -220,7 +220,7 @@ export const QuizPage = ({ modelHook }) => {
 
                 {/* Live Instructions */}
                 <div className="text-center p-3.5 bg-paper-2 border border-ink text-xs font-medium text-ink/80 mb-4">
-                  Bentuk huruf <strong className="font-black text-coral text-sm underline">{targetLetter}</strong> di depan kamera dan tahan isyarat sampai kotak berpindah!
+                  Bentuk huruf <strong className="font-black text-coral text-sm underline">{targetLetter}</strong> di depan kamera dan tahan 1,5 detik sampai kotak terisi!
                 </div>
 
                 {/* Hint Toggle Button */}
@@ -230,7 +230,7 @@ export const QuizPage = ({ modelHook }) => {
                     className="btn bg-paper-2 hover:bg-yellow text-xs font-mono py-2 px-3 flex items-center gap-1.5"
                   >
                     <HelpCircle className="w-3.5 h-3.5" />
-                    <span>{showHint ? "Sembunyikan Bantuan" : `Bantuan Bentuk Huruf [${targetLetter}]`}</span>
+                    <span>{showHint ? "Tutup Petunjuk" : `Petunjuk Bentuk Huruf [${targetLetter}]`}</span>
                   </button>
 
                   <button
@@ -238,7 +238,7 @@ export const QuizPage = ({ modelHook }) => {
                     className="text-xs font-mono font-bold text-ink/50 hover:text-ink flex items-center gap-1"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
-                    Reset
+                    Ulangi
                   </button>
                 </div>
 
@@ -270,15 +270,15 @@ export const QuizPage = ({ modelHook }) => {
 
                 <div className="flex items-center justify-center gap-2 mb-2">
                   <span className="sticker sticker-yellow px-2 py-0.5 text-xs font-mono uppercase">
-                    🎉 SELESAI SEMUA KATA!
+                    🎉 SEMUA KATA BERHASIL DIEJA!
                   </span>
                 </div>
 
                 <h3 className="font-display font-black text-3xl text-ink mb-2">
-                  Luar Biasa, Juara Isyarat!
+                  Selamat, Tantangan Eja Berhasil!
                 </h3>
                 <p className="font-sans text-xs text-ink/70 font-medium max-w-sm mx-auto mb-6">
-                  Kamu berhasil menyelesaikan seluruh {QUIZ_WORDS.length} kata tantangan SIBI dalam waktu {formatTimer(timerSeconds)}.
+                  Kamu telah menyelesaikan seluruh {QUIZ_WORDS.length} kata tantangan SIBI dalam waktu {formatTimer(timerSeconds)}.
                 </p>
 
                 <div className="grid grid-cols-2 gap-3 mb-6 font-mono text-left">
@@ -298,13 +298,13 @@ export const QuizPage = ({ modelHook }) => {
                     className="btn btn-yellow w-full sm:w-auto text-xs font-mono py-3 px-6 flex items-center justify-center gap-2 shadow-[4px_4px_0_#111]"
                   >
                     <RotateCcw className="w-4 h-4" />
-                    Main Lagi
+                    Ulangi Tantangan
                   </button>
                   <Link
                     to="/latihan"
                     className="btn bg-paper hover:bg-paper-3 w-full sm:w-auto text-xs font-mono py-3 px-6 text-center"
                   >
-                    Lanjut ke Latihan Bebas →
+                    Lanjut ke Studio Latihan →
                   </Link>
                 </div>
               </div>
@@ -332,7 +332,7 @@ export const QuizPage = ({ modelHook }) => {
             {/* Quick Helper Banner */}
             <div className="p-3 bg-paper-2 border border-ink flex items-center justify-between text-xs font-mono text-ink/70">
               <span>Tips: Pastikan tangan berada di dalam kotak tengah agar kamera mendeteksi dengan cepat.</span>
-              <span className="font-bold text-ink">Ambang Deteksi: 75%</span>
+              <span className="font-bold text-ink">Ambang Penguncian: 75%</span>
             </div>
           </div>
         </div>

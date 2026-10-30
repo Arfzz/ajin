@@ -90,8 +90,8 @@ export const SibiGuideVideo = ({
             <span className="text-6xl font-display font-extrabold text-brand-soft drop-shadow">
               {currentLetter}
             </span>
-            <span className="mt-2 text-xs font-mono text-ink/60">
-              Posisikan tangan di dalam kotak
+            <span className="mt-2 text-xs font-mono text-white/80 font-bold">
+              Posisikan jemari di dalam kotak
             </span>
           </div>
         )}

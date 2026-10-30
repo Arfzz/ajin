@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import * as tf from "@tensorflow/tfjs";
 
 const DEFAULT_LABELS = [
+  "1", "2", "3", "4", "5", "6", "7", "8", "9",
   "A", "B", "C", "D", "E", "F", "G", "H", "I", "J",
   "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T",
   "U", "V", "W", "X", "Y", "Z"
@@ -11,9 +12,9 @@ export const useSibiModel = (options = {}) => {
   const {
     modelPath = "/model/model.json",
     labelsPath = "/model/labels.json",
-    imgSize = 224,
-    defaultChannelMode = "rgb", // "rgb" (3 channel) atau "grayscale" (1 channel)
-    confidenceThreshold = 75,
+    imgSize = 150,
+    defaultChannelMode = "grayscale", // "grayscale" (1 channel) atau "rgb" (3 channel)
+    confidenceThreshold = 70,
     holdDurationMs = 1500,
   } = options;
 
@@ -22,6 +23,7 @@ export const useSibiModel = (options = {}) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSimulationMode, setIsSimulationMode] = useState(false);
   const [channelMode, setChannelMode] = useState(defaultChannelMode); // "rgb" | "grayscale"
+  const [activeImgSize, setActiveImgSize] = useState(imgSize);
   const [useRoiCrop, setUseRoiCrop] = useState(true);
 
   // Telemetri Real-Time
@@ -81,24 +83,50 @@ export const useSibiModel = (options = {}) => {
         await tf.ready();
         let loadedModel = null;
         try {
-          loadedModel = await tf.loadGraphModel(modelPath);
-        } catch (graphErr) {
-          console.warn("[AJIN TFJS] Gagal loadGraphModel, mencoba loadLayersModel...", graphErr);
+          // Coba loadLayersModel terlebih dahulu untuk Keras Sequential layers-model
           loadedModel = await tf.loadLayersModel(modelPath);
+        } catch (layerErr) {
+          console.info("[AJIN TFJS] loadLayersModel dialihkan ke loadGraphModel:", layerErr.message);
+          try {
+            loadedModel = await tf.loadGraphModel(modelPath);
+          } catch (graphErr) {
+            throw new Error(`Gagal memuat model: ${graphErr.message}`);
+          }
         }
 
-        // 4. GPU warm-up
+        // 4. Deteksi resolusi input dan channel dari arsitektur model
+        let detectedSize = imgSize;
+        let detectedChannels = defaultChannelMode === "grayscale" ? 1 : 3;
+
+        if (loadedModel && loadedModel.inputs && loadedModel.inputs[0] && Array.isArray(loadedModel.inputs[0].shape)) {
+          const inShape = loadedModel.inputs[0].shape; // contoh: [null, 150, 150, 1]
+          if (inShape.length === 4) {
+            if (inShape[1] && inShape[1] > 0) detectedSize = inShape[1];
+            if (inShape[3] === 1) {
+              detectedChannels = 1;
+              if (isMounted) setChannelMode("grayscale");
+            } else if (inShape[3] === 3) {
+              detectedChannels = 3;
+              if (isMounted) setChannelMode("rgb");
+            }
+          }
+        }
+
+        if (isMounted) {
+          setActiveImgSize(detectedSize);
+        }
+
+        // 5. GPU warm-up
         if (loadedModel) {
           tf.tidy(() => {
-            const channels = defaultChannelMode === "grayscale" ? 1 : 3;
-            const dummy = tf.zeros([1, imgSize, imgSize, channels]);
+            const dummy = tf.zeros([1, detectedSize, detectedSize, detectedChannels]);
             loadedModel.predict(dummy);
           });
 
           if (isMounted) {
             setModel(loadedModel);
             setIsSimulationMode(false);
-            console.log("[AJIN TFJS] Model berhasil dimuat dan siap inferensi WebGL.");
+            console.log(`[AJIN TFJS] Model berhasil dimuat: ${detectedSize}x${detectedSize}, ${detectedChannels} channel, WebGL siap.`);
           }
         }
       } catch (err) {
@@ -180,11 +208,11 @@ export const useSibiModel = (options = {}) => {
               imageTensor.expandDims(0),
               boxes,
               boxInd,
-              [imgSize, imgSize]
+              [activeImgSize, activeImgSize]
             );
             imageTensor = cropped.squeeze(0);
           } else {
-            imageTensor = tf.image.resizeBilinear(imageTensor, [imgSize, imgSize]);
+            imageTensor = tf.image.resizeBilinear(imageTensor, [activeImgSize, activeImgSize]);
           }
 
           // Channel Mode: Grayscale (1 channel) atau RGB (3 channel)
@@ -229,7 +257,7 @@ export const useSibiModel = (options = {}) => {
 
       return prediction;
     },
-    [model, isSimulationMode, simulatedLetter, labels, channelMode, useRoiCrop, imgSize, telemetry.fps]
+    [model, isSimulationMode, simulatedLetter, labels, channelMode, useRoiCrop, activeImgSize, telemetry.fps]
   );
 
   // Logika temporal smoothing dan hold-to-type
