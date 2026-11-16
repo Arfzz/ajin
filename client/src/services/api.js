@@ -84,6 +84,16 @@ export const expandTextVariations = async (text, mode = "casual") => {
   }
 };
 
+export const recognizeSignFromImage = async (image, mimeType = "image/jpeg") => {
+  try {
+    const res = await api.post("/ai/recognize-image", { image, mimeType });
+    return res.data;
+  } catch (err) {
+    const msg = err.response?.data?.message || err.message || "Gagal memproses gambar.";
+    return { success: false, message: msg };
+  }
+};
+
 export const checkAiStatus = async () => {
   try {
     const res = await api.get("/ai/status");

@@ -265,3 +265,102 @@ Balas WAJIB HANYA dalam format JSON berikut tanpa teks tambahan di luar JSON:
   }
 };
 
+/**
+ * POST /api/ai/recognize-image
+ * Body: { image: string (base64), mimeType?: string }
+ *
+ * Menganalisis foto gestur tangan dan menentukan huruf SIBI (A-Z)
+ * menggunakan model multimodal Google Gemini.
+ */
+export const recognizeSignFromImage = async (req, res) => {
+  try {
+    const { image, mimeType = "image/jpeg" } = req.body;
+
+    if (!image || typeof image !== "string") {
+      return res.status(400).json({
+        success: false,
+        message: "Data gambar (base64) wajib dikirimkan pada kolom 'image'.",
+      });
+    }
+
+    // Bersihkan prefix data URL (misal: 'data:image/jpeg;base64,')
+    const cleanBase64 = image.includes(",") ? image.split(",")[1] : image;
+    const detectedMime = image.includes(";") && image.includes(":")
+      ? image.split(";")[0].replace("data:", "")
+      : mimeType;
+
+    const genAI = getGeminiClient();
+    const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+
+    const imagePart = {
+      inlineData: {
+        data: cleanBase64,
+        mimeType: detectedMime || "image/jpeg",
+      },
+    };
+
+    const prompt = `Kamu adalah pakar bahasa isyarat Sistem Isyarat Bahasa Indonesia (SIBI) dan penglihatan komputer (computer vision) untuk aplikasi AJIN.
+
+Tugasmu adalah menganalisis foto tangan ini yang membentuk alfabet SIBI (A sampai Z).
+
+Lakukan analisis seksama terhadap:
+1. Huruf SIBI apa yang dibentuk oleh tangan pada foto (A-Z)?
+2. Tingkat keyakinan / confidence (persentase bilangan bulat 0-100).
+3. Tipe gestur: "static" (statis) atau "dynamic" (dinamis, seperti J atau Z).
+4. Deskripsi posisi jemari yang teramati pada foto (misal: posisi ibu jari, telunjuk, jari tengah, kelingking).
+5. Saran / feedback presisi: apakah posisinya sudah akurat sesuai standar SIBI atau ada koreksi jari yang perlu diperbaiki agar lebih jelas terbaca.
+6. Huruf alternatif (jika gesturnya ambigu atau mirip dengan huruf lain, misal K dengan V/Y, atau M dengan N/S).
+
+Jika foto BUKAN gestur tangan manusia atau tidak terbaca sama sekali, berikan "isSign": false dan jelaskan pada kolom "feedback".
+
+WAJIB balas HANYA dalam format JSON valid berikut tanpa blok markdown tambahan dan tanpa teks lain di luar kurung kurawal:
+{
+  "isSign": true,
+  "letter": "<HURUF A-Z>",
+  "confidence": <angka 0-100>,
+  "gestureType": "<static atau dynamic>",
+  "description": "<deskripsi posisi jemari>",
+  "feedback": "<masukan ketepatan posisi jari>",
+  "alternatives": ["<huruf mirip>", "..."]
+}`;
+
+    const result = await model.generateContent([prompt, imagePart]);
+    const responseText = result.response.text().trim();
+
+    // Ambil blok JSON
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error("Gagal membaca struktur respons analisis dari model.");
+    }
+
+    const parsed = JSON.parse(jsonMatch[0]);
+
+    return res.json({
+      success: true,
+      result: {
+        isSign: parsed.isSign !== false,
+        letter: parsed.letter ? String(parsed.letter).toUpperCase().trim() : "?",
+        confidence: Number(parsed.confidence) || 85,
+        gestureType: parsed.gestureType === "dynamic" ? "dynamic" : "static",
+        description: parsed.description || "Posisi jemari terdeteksi sesuai kaidah SIBI.",
+        feedback: parsed.feedback || "Gestur tangan berhasil dikenali dengan baik.",
+        alternatives: Array.isArray(parsed.alternatives) ? parsed.alternatives : [],
+      },
+    });
+  } catch (err) {
+    console.error("[AJIN AI] Error mengenali gestur dari foto:", err.message);
+
+    if (err.message.includes("GEMINI_API_KEY")) {
+      return res.status(503).json({
+        success: false,
+        message: "Layanan AI belum dikonfigurasi. Tambahkan GEMINI_API_KEY di file .env server.",
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: `Gagal menganalisis foto SIBI: ${err.message}`,
+    });
+  }
+};
+

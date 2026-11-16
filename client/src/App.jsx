@@ -9,6 +9,7 @@ import { PracticePage } from "./pages/PracticePage";
 import { AiCompanionPage } from "./pages/AiCompanionPage";
 import { QuizPage } from "./pages/QuizPage";
 import { AnalyticsPage } from "./pages/AnalyticsPage";
+import { PhotoRecognitionPage } from "./pages/PhotoRecognitionPage";
 import { CustomCursor } from "./components/creative/CustomCursor";
 import { KineticPreloader } from "./components/creative/KineticPreloader";
 import { AuthProvider } from "./context/AuthContext";
@@ -46,6 +47,8 @@ export function App() {
                 <Route path="/narasi" element={<AiCompanionPage modelHook={modelHook} />} />
                 <Route path="/kuis" element={<QuizPage modelHook={modelHook} />} />
                 <Route path="/analitik" element={<AnalyticsPage />} />
+                <Route path="/foto" element={<PhotoRecognitionPage />} />
+                <Route path="/scan" element={<PhotoRecognitionPage />} />
               </Routes>
             </main>
 

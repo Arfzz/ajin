@@ -15,6 +15,7 @@ const GoogleIcon = () => (
 const NAV_LINKS = [
   { label: "Kamus Huruf",  path: "/kamus" },
   { label: "Latih Kamera", path: "/latihan" },
+  { label: "Pindai Foto",  path: "/foto" },
   { label: "Asisten SIBI", path: "/narasi" },
   { label: "Kuis Eja",     path: "/kuis" },
   { label: "Analitik",     path: "/analitik" },
