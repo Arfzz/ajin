@@ -1,107 +1,241 @@
 # AJIN (Aplikasi Jembatan Bahasa Isyarat dan Narasi)
 
-**Pengembangan Aplikasi Pembelajaran Sistem Isyarat Bahasa Indonesia (SIBI) Berbasis Computer Vision untuk Pengenalan Alfabet Secara Real-Time**
+Platform Pembelajaran dan Pengenalan Sistem Isyarat Bahasa Indonesia (SIBI) Berbasis Computer Vision Secara Real-Time di Browser.
 
-Arsitektur: Monorepo Full-Stack JavaScript (React Vite + Express.js + Supabase PostgreSQL) dengan Inferensi Client-Side TensorFlow.js, Framer Motion, 21st.dev Container Scroll & Media Expansion, GSAP, Lenis Smooth Scroll, dan Prosedural Remotion Guide.
+Arsitektur: Monorepo Full-Stack JavaScript (React Vite + Express.js + Supabase PostgreSQL) dengan inferensi sisi klien (client-side) menggunakan MediaPipe Hands Landmark dan ONNX Runtime WebAssembly, kecerdasan generatif Google Gemini 2.5 Flash, serta antarmuka Playful Neobrutalism berdaya aksesibilitas tinggi.
 
 ---
 
-## 1. Struktur Monorepo
+## 1. Ringkasan Eksekutif
+
+AJIN dirancang sebagai jembatan komunikasi inklusif antara komunitas Teman Tuli dan masyarakat umum. Sistem ini mendeteksi gestur tangan alfabet Sistem Isyarat Bahasa Indonesia (SIBI) dari huruf A hingga Z melalui webcam atau kamera perangkat tanpa memerlukan instalasi backend Python khusus untuk inferensi video. Seluruh komputasi computer vision diproses langsung di peramban pengguna (*client-side*), menjamin privasi video kamera dan menghasilkan performa real-time 25 sampai 30 frame per detik (FPS).
+
+### Prinsip Desain: Playful Neobrutalism
+- **Batas Geometris Tegas**: Garis tinta pekat 2.5px hingga 3px (`border-ink`), bayangan jatuh tanpa blur (`shadow-[4px_4px_0_#111]`), dan sudut tegas.
+- **Palet Warna Kontras Tinggi**: Cyber Yellow (`#FFD000`), Mint (`#00C68E`), Coral (`#FF4D4D`), Cobalt (`#0055FF`), dan latar Paper (`#FDFBF7`).
+- **Anti-Slop & Aksesibilitas WCAG AAA**: Tipografi kontras tinggi, bebas dari badge miring dekoratif yang tidak fungsional, dan bebas emoji generik.
+
+---
+
+## 2. Fitur Utama Aplikasi
+
+1. **Kamus 26 Alfabet SIBI Interaktif (`/kamus`)**
+   - Katalog lengkap 26 huruf alfabet SIBI (A-Z) dengan deskripsi posisi jemari.
+   - Filter klasifikasi: Vokal, Konsonan, Gestur Dinamis (lintasan gerak huruf J dan Z), serta Kategori Rawan Salah.
+   - Pemutar panduan simulasi prosedural (Remotion procedural animation) dengan tampilan kartu Neobrutalism kontras tinggi.
+
+2. **Studio Latihan Kamera Real-Time (`/latihan`)**
+   - Deteksi webcam real-time dengan kotak panduan Region of Interest (ROI).
+   - Mekanisme penahanan isyarat (*Hold-to-Type*) 1.0 detik untuk mencegah kesalahan deteksi saat tangan bergerak (*flickering*).
+   - Bar telemetri real-time yang memantau FPS, latensi inferensi (ms), dan tingkat kepercayaan model (*confidence score*).
+   - Notifikasi umpan balik visual dan pencatatan sesi latihan otomatis ke riwayat analitik.
+
+3. **Pindai Isyarat dari Foto (`/pindai` atau `/foto`)**
+   - Pengenalan isyarat SIBI dari foto atau gambar statis melalui unggah file atau seret-dan-lepas (*drag and drop*).
+   - Visualisasi skeleton 21 landmark tangan dan distribusi probabilitas 5 prediksi teratas.
+
+4. **Studio Narasi & Text-to-Speech (`/narasi`)**
+   - Merangkai huruf isyarat menjadi kata dan kalimat narasi secara langsung.
+   - Fitur koreksi ejaan otomatis dan tombol pembaca suara menggunakan Web Speech API Bahasa Indonesia (`id-ID`).
+
+5. **Kuis & Evaluasi Mengeja Kata (`/kuis`)**
+   - Modul evaluasi interaktif yang menguji kemampuan pengguna dalam mengingat dan membentuk gestur huruf SIBI.
+   - Dilengkapi laci bantuan (*hint drawer*) dan pencatatan akurasi jawaban.
+
+6. **Asisten AI SIBI & Chatbot Global AJIN (`/asisten`)**
+   - Widget asisten suara mengambang (*floating widget*) yang dapat diakses dari seluruh halaman aplikasi.
+   - Masukan suara (*Speech-to-Text id-ID*), konversi teks ke suara (*Text-to-Speech id-ID*), dan pemrosesan percakapan interaktif menggunakan Google Gemini 2.5 Flash.
+   - Tombol pintasan cerdas (*smart action buttons*) untuk navigasi cepat ke halaman kamus, latihan, atau kuis.
+
+7. **Dashboard Analitik & Evaluasi Empiris (`/analitik`)**
+   - Rekap metrik empiris penelitian: rata-rata latensi inferensi, rata-rata FPS, akurasi per kelas huruf, dan tabel detail sesi latihan.
+   - Arsitektur penyimpanan ganda: sinkronisasi otomatis antara LocalStorage browser dengan basis data server (JSON store / Supabase).
+   - Fitur **Ekspor CSV** untuk keperluan pengolahan data empiris skripsi atau publikasi ilmiah.
+
+8. **Autentikasi Pengguna & Mode Tamu**
+   - Mendukung login menggunakan Google OAuth 2.0 (Passport.js).
+   - Pengguna tamu (*guest*) dapat langsung berlatih tanpa login, dan data latihan sesi tamu otomatis dimigrasikan ke akun pengguna setelah login berhasil.
+
+---
+
+## 3. Arsitektur Monorepo
 
 ```text
 ajin/
-├── package.json                       # Root script (jalankan client & server)
-├── README.md                          # Dokumentasi proyek
+├── package.json                       # Skrip orkestrasi root (menjalankan client & server)
+├── README.md                          # Dokumentasi resmi proyek
 ├── supabase/
-│   └── seed.sql                       # DDL Skema PostgreSQL & Seeder 26 Alfabet SIBI
-├── server/                            # Express.js Backend (Port 5000)
-│   ├── prisma/
-│   │   └── schema.prisma              # Skema Prisma untuk Supabase DB
+│   └── seed.sql                       # Skema DDL PostgreSQL & data awal 26 alfabet SIBI
+├── server/                            # Backend API (Node.js + Express.js, Port 5001)
 │   ├── src/
-│   │   ├── config/supabase.js         # Klien Supabase dengan in-memory fallback
-│   │   ├── controllers/               # Auth, Alfabet, Progres, Telemetri
-│   │   ├── routes/                    # API endpoints
-│   │   └── index.js                   # Server utama Express
-│   ├── .env.example
+│   │   ├── config/                    # Inisialisasi Supabase, Passport, dan Gemini AI
+│   │   ├── controllers/               # Auth, Alfabet, Progres, Telemetri, dan AI Chat
+│   │   ├── data/                      # File persistensi lokal (telemetry_store.json, dsb.)
+│   │   ├── routes/                    # Definisi rute Express (/api/*)
+│   │   └── index.js                   # Entry point server Express
+│   ├── .env.example                   # Contoh konfigurasi environment backend
 │   └── package.json
-└── client/                            # React Vite Frontend (Port 5173)
+└── client/                            # Frontend Web SPA (React 18 + Vite, Port 5173)
     ├── public/
-    │   └── model/                     # Lokasi model TensorFlow.js (model.json & labels.json)
-    │       └── labels.json            # Array 26 label ["A", "B", ..., "Z"]
+    │   ├── model/                     # Bobot model ONNX & MediaPipe Hand Landmarker
+    │   │   ├── effnet_b0_sibi.onnx    # Model klasifikasi ONNX SIBI
+    │   │   ├── hand_landmarker.task   # Model deteksi 21 landmark tangan MediaPipe
+    │   │   └── labels.json            # Array 26 label huruf ["A", "B", ..., "Z"]
+    │   └── wasm/                      # Binari WebAssembly ONNX Runtime & MediaPipe
     ├── src/
     │   ├── components/
-    │   │   ├── creative/              # 21st.dev (ContainerScroll & MediaExpansionHero)
-    │   │   ├── reactbits/             # SplitText, SpotlightCard, MagnetButton, DecryptedText, TiltedCard, FloatingDock
-    │   │   ├── remotion/              # Panduan visual gerak isyarat prosedural
-    │   │   ├── vision/                # WebcamCanvas (ROI guide box) & TelemetryBar
-    │   │   └── layout/                # Navbar & SmoothScroll (Lenis + GSAP)
-    │   ├── hooks/
-    │   │   └── useSibiModel.js        # Hook TFJS dengan fallback Mode Simulasi interaktif
-    │   ├── pages/
-    │   │   ├── HomePage.jsx           # Beranda dengan 21st.dev Container Scroll & Bento Grid
-    │   │   ├── DictionaryPage.jsx     # Kamus 26 alfabet SIBI + filter + drawer detail
-    │   │   ├── PracticePage.jsx       # Studio latihan kamera real-time
-    │   │   ├── NarrativePage.jsx      # Jembatan isyarat ke narasi + Text-to-Speech id-ID
-    │   │   ├── QuizPage.jsx           # Tantangan mengeja kata SIBI
-    │   │   └── AnalyticsPage.jsx      # Dashboard evaluasi empiris & ekspor CSV
+    │   │   ├── chat/                  # Widget Asisten Suara & Chatbot AJIN
+    │   │   ├── layout/                # Navbar, Footer, SmoothScroll, Preloader
+    │   │   ├── remotion/              # Komposisi panduan visual gestur tangan
+    │   │   └── vision/                # WebcamCanvas (ROI guide) & TelemetryBar
+    │   ├── context/                   # AuthContext (Google OAuth & migrasi guest)
+    │   ├── hooks/                     # useSibiModel (pipeline MediaPipe + ONNX + fallback)
+    │   ├── pages/                     # Halaman utama (Home, Kamus, Latihan, Narasi, Kuis, Analitik, Foto)
+    │   ├── services/                  # Klien Axios & sinkronisasi data telemetri
     │   ├── App.jsx
     │   └── main.jsx
-    ├── .env.example
+    ├── vercel.json                    # Konfigurasi SPA rewrite untuk deployment Vercel
+    ├── .env.example                   # Contoh konfigurasi environment frontend
     └── package.json
 ```
 
 ---
 
-## 2. Cara Menjalankan Aplikasi
+## 4. Panduan Menjalankan Proyek Secara Lokal
 
-### Langkah 1: Install Dependensi
-Jalankan di root folder proyek:
+### Prasyarat Sistem
+- **Node.js**: Versi 18.x atau lebih tinggi (disarankan versi LTS 20.x).
+- **NPM**: Versi 9.x atau lebih baru.
+- Peramban web modern yang mendukung WebGL dan WebAssembly (Google Chrome, Microsoft Edge, atau Firefox).
+
+### Langkah 1: Kloning Repositori
+```bash
+git clone https://github.com/Arfzz/ajin.git
+cd ajin
+```
+
+### Langkah 2: Pasang Seluruh Dependensi
+Jalankan perintah berikut di folder root:
 ```bash
 npm --prefix server install
 npm --prefix client install
 ```
 
-### Langkah 2: Menjalankan Server Backend dan Client Frontend Bersamaan
+### Langkah 3: Konfigurasi Environment Variables
+
+1. **Konfigurasi Server**: Salin file `server/.env.example` menjadi `server/.env`:
+   ```bash
+   cp server/.env.example server/.env
+   ```
+   Isi variabel penting pada `server/.env`:
+   - `PORT=5001`
+   - `CLIENT_URL=http://localhost:5173`
+   - `GEMINI_API_KEY`: Kunci API Google AI Studio untuk mengaktifkan chatbot cerdas.
+   - `GOOGLE_CLIENT_ID` dan `GOOGLE_CLIENT_SECRET`: Kredensial OAuth Google (opsional jika hanya menjalankan mode tamu).
+   - `SUPABASE_URL` dan `SUPABASE_ANON_KEY`: Kredensial Supabase (opsional, server memiliki penyimpanan disk JSON lokal jika Supabase tidak diisi).
+
+2. **Konfigurasi Client**: Salin file `client/.env.example` menjadi `client/.env`:
+   ```bash
+   cp client/.env.example client/.env
+   ```
+   Isi variabel pada `client/.env`:
+   - `VITE_API_URL=http://localhost:5001`
+
+### Langkah 4: Jalankan Aplikasi
+Jalankan kedua layanan (backend dan frontend) secara bersamaan dari root folder:
 ```bash
 npm run dev
 ```
-Atau jalankan di dua terminal terpisah:
-* Terminal 1: `npm --prefix server run dev` (Berjalan di `http://localhost:5000`)
-* Terminal 2: `npm --prefix client run dev` (Berjalan di `http://localhost:5173`)
+
+Atau jalankan pada dua jendela terminal terpisah:
+- **Terminal 1 (Backend Express)**:
+  ```bash
+  npm --prefix server run dev
+  ```
+  Backend berjalan pada `http://localhost:5001`.
+- **Terminal 2 (Frontend React)**:
+  ```bash
+  npm --prefix client run dev
+  ```
+  Aplikasi web dapat diakses pada `http://localhost:5173`.
 
 ---
 
-## 3. Cara Menaruh Model dari Google Colab
+## 5. Pipeline Machine Learning & Computer Vision
 
-Ketika model Machine Learning selesai dilatih dan dikonversi ke format TensorFlow.js di Google Colab:
+AJIN menggunakan arsitektur inferensi bertingkat (*two-stage inference pipeline*) yang sepenuhnya berjalan di browser:
 
-1. Unduh hasil konversi: file `model.json` dan seluruh file shard bobot bertipe `.bin` (misalnya `group1-shard1of1.bin`).
-2. Taruh file-file tersebut ke folder:
-   ```text
-   client/public/model/
-   ├── model.json
-   ├── group1-shard1of1.bin
-   └── labels.json
+```text
+Kamera / Foto
+     │
+     ▼
+MediaPipe Hand Landmarker (WASM)
+     │ Deteksi 21 titik koordinat 3D tangan (x, y, z)
+     ▼
+Ekstraksi & Normalisasi Fitur (63 dimensi)
+     │ Normalisasi terhadap wrist & ukuran telapak (scale & translation invariant)
+     ▼
+ONNX Runtime WebAssembly (effnet_b0_sibi.onnx)
+     │ Klasifikasi probabilitas huruf SIBI (A-Z)
+     ▼
+Penyaring Temporal & Hold-to-Type (1.0 detik)
+     │ Mencegah false positive saat tangan bergerak transisi
+     ▼
+Karakter Terketik / Umpan Balik Visual
+```
+
+### Mode Fallback (Simulasi Interaktif)
+Jika file model di `client/public/model/` belum tersedia atau pengguna menolak izin akses kamera, sistem secara otomatis mengaktifkan **Mode Simulasi Interaktif**. Pengguna tetap dapat menguji alur aplikasi, memilih huruf target, menyimulasikan gestur, dan membaca panduan tanpa kendala.
+
+---
+
+## 6. Panduan Deployment Produksi
+
+### A. Deployment Frontend ke Vercel
+1. Hubungkan repositori GitHub ke Vercel.
+2. Atur **Root Directory** ke folder `client`.
+3. File `client/vercel.json` telah dikonfigurasi dengan aturan penulisan ulang (*rewrites*) SPA:
+   ```json
+   {
+     "rewrites": [
+       { "source": "/(.*)", "destination": "/" }
+     ]
+   }
    ```
-3. Buka web kembali. Sistem akan secara otomatis mendeteksi `model.json`, melakukan warm-up WebGL, dan beralih dari **Mode Simulasi** ke **Mode Inferensi TensorFlow.js Asli**.
+4. Tambahkan Environment Variable di dashboard Vercel:
+   - `VITE_API_URL`: URL publik backend Express Anda (contoh: `https://api-ajin.azurewebsites.net`).
 
-> **Catatan:** Jika model belum ditaruh di folder `client/public/model/`, aplikasi akan otomatis berjalan dalam **Mode Simulasi Interaktif**. Anda tetap dapat memilih huruf target atau menyimulasikan deteksi kamera tanpa hambatan.
+### B. Deployment Backend ke Azure App Service / Railway / Render
+1. Deploy folder `server` ke penyedia hosting Node.js pilihan Anda.
+2. Atur Environment Variables di penyedia hosting:
+   - `NODE_ENV=production`
+   - `CLIENT_URL=https://nama-domain-anda.vercel.app`
+   - `GEMINI_API_KEY=kunci_api_gemini_anda`
+   - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, dan `GOOGLE_REDIRECT_URI` (sesuai domain publik).
+   - `SUPABASE_URL` dan `SUPABASE_SERVICE_ROLE_KEY` (jika menggunakan Supabase di produksi).
+
+### C. Build Menjadi Aplikasi Mobile Android (APK)
+Aplikasi web AJIN dapat dibungkus menjadi APK Android menggunakan **Capacitor**:
+1. Pasang Capacitor di folder `client`:
+   ```bash
+   cd client
+   npm install @capacitor/core @capacitor/cli @capacitor/android @capacitor/app @capacitor/browser
+   npx cap init "AJIN SIBI" "com.ajin.sibi" --web-dir=dist
+   ```
+2. Build frontend dan tambahkan platform Android:
+   ```bash
+   npm run build
+   npx cap add android
+   ```
+3. Buka folder `android` di Android Studio dan pastikan izin kamera telah tercantum di `AndroidManifest.xml`:
+   ```xml
+   <uses-permission android:name="android.permission.CAMERA" />
+   <uses-permission android:name="android.permission.RECORD_AUDIO" />
+   ```
+4. Build APK Release atau Debug melalui menu **Build > Build Bundle(s) / APK(s) > Build APK(s)** di Android Studio.
 
 ---
 
-## 4. Setup Database Supabase (Opsional / Siap Pakai)
+## 7. Lisensi
 
-Jika ingin menyimpan progres dan data telemetri penelitian ke akun Supabase Anda:
-
-1. Buka [Supabase Dashboard](https://supabase.com).
-2. Masuk ke menu **SQL Editor**, buka file `supabase/seed.sql` di proyek ini, lalu salin dan jalankan kodenya. Seluruh tabel dan data 26 alfabet SIBI langsung terisi lengkap.
-3. Salin URL dan Kunci API Supabase ke file `server/.env` dan `client/.env`.
-
----
-
-## 5. Fitur Utama
-
-* **21st.dev Container Scroll & Media Expansion:** Animasi 3D tilt scroll dinamis yang membuka studio visualizer SIBI.
-* **Mekanisme Hold-to-Type 1.5 Detik:** Menjaga stabilitas input dengan penyangga temporal frame sehingga tidak terjadi salah deteksi saat tangan bergerak.
-* **Jembatan Narasi & TTS id-ID:** Merangkai huruf isyarat menjadi kata dan kalimat yang dapat disuarakan dengan Web Speech API Bahasa Indonesia.
-* **Dashboard Evaluasi Empiris:** Merekam latensi, FPS, dan akurasi per kelas huruf dengan tombol **Ekspor CSV** untuk bab analisis skripsi.
+Proyek ini dikembangkan untuk tujuan penelitian akademik, pengembangan teknologi asistif inklusif, dan edukasi Sistem Isyarat Bahasa Indonesia (SIBI). Seluruh kode dirilis di bawah lisensi MIT.
