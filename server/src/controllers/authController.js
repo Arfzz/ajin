@@ -1,108 +1,239 @@
+import { OAuth2Client } from "google-auth-library";
 import { supabase, isSupabaseConfigured } from "../config/supabase.js";
 
+// Helper inisialisasi OAuth2Client Google
+const getOAuth2Client = () => {
+  const clientId = (process.env.GOOGLE_CLIENT_ID || "").replace(/^"|"$/g, "").trim();
+  const clientSecret = (process.env.GOOGLE_CLIENT_SECRET || "").replace(/^"|"$/g, "").trim();
+  const redirectUri = (process.env.GOOGLE_REDIRECT_URI || "http://localhost:8000/auth/google/callback").replace(/^"|"$/g, "").trim();
+
+  if (!clientId || !clientSecret) {
+    throw new Error("GOOGLE_CLIENT_ID dan GOOGLE_CLIENT_SECRET belum dikonfigurasi di server/.env");
+  }
+
+  return new OAuth2Client(clientId, clientSecret, redirectUri);
+};
+
+/**
+ * GET /api/auth/google
+ * Mengarahkan pengguna ke halaman persetujuan (consent screen) Google OAuth2
+ */
+export const googleAuthRedirect = (req, res) => {
+  try {
+    const oauth2Client = getOAuth2Client();
+
+    const authUrl = oauth2Client.generateAuthUrl({
+      access_type: "offline",
+      scope: [
+        "https://www.googleapis.com/auth/userinfo.profile",
+        "https://www.googleapis.com/auth/userinfo.email",
+        "openid",
+      ],
+      prompt: "select_account",
+    });
+
+    // Jika dipanggil via JSON request
+    if (req.headers.accept?.includes("application/json") && !req.query.redirect) {
+      return res.json({ success: true, url: authUrl });
+    }
+
+    // Direct browser redirect
+    return res.redirect(authUrl);
+  } catch (err) {
+    console.error("[AJIN Auth] Error menginisialisasi Google Auth:", err.message);
+    return res.status(500).json({
+      success: false,
+      message: err.message || "Gagal membuat URL autentikasi Google.",
+    });
+  }
+};
+
+/**
+ * GET /auth/google/callback atau /api/auth/google/callback
+ * Menerima authorization code dari Google, menukarkan dengan token dan data profil pengguna
+ */
+export const googleAuthCallback = async (req, res) => {
+  const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+  const { code, error } = req.query;
+
+  if (error) {
+    console.warn("[AJIN Auth] Google OAuth dibatalkan pengguna atau error:", error);
+    return res.redirect(`${clientUrl}/?auth_error=${encodeURIComponent(error)}`);
+  }
+
+  if (!code) {
+    return res.redirect(`${clientUrl}/?auth_error=${encodeURIComponent("Authorization code tidak ditemukan.")}`);
+  }
+
+  try {
+    const oauth2Client = getOAuth2Client();
+    const { tokens } = await oauth2Client.getToken(String(code));
+    oauth2Client.setCredentials(tokens);
+
+    // Verifikasi ID Token untuk mendapatkan profil aman
+    const clientId = (process.env.GOOGLE_CLIENT_ID || "").replace(/^"|"$/g, "").trim();
+    const ticket = await oauth2Client.verifyIdToken({
+      idToken: tokens.id_token,
+      audience: clientId,
+    });
+    const payload = ticket.getPayload();
+
+    const userData = {
+      id: payload.sub,
+      email: payload.email,
+      name: payload.name || "Pelajar SIBI",
+      picture: payload.picture || "",
+      role: "student",
+      provider: "google",
+    };
+
+    // Sinkronkan ke Supabase jika database Supabase aktif
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data: existingUser } = await supabase
+          .from("User")
+          .select("id, name, email, role")
+          .eq("email", payload.email)
+          .single();
+
+        if (!existingUser) {
+          await supabase.from("User").insert({
+            id: payload.sub,
+            name: userData.name,
+            email: userData.email,
+            role: "student",
+          });
+        }
+      } catch (dbErr) {
+        console.warn("[AJIN Auth] Gagal sinkronisasi data user ke Supabase:", dbErr.message);
+      }
+    }
+
+    console.log(`[AJIN Auth] Login Google berhasil: ${userData.name} (${userData.email})`);
+
+    // Redirect kembali ke client dengan data user & token
+    const userParam = encodeURIComponent(JSON.stringify(userData));
+    const tokenParam = encodeURIComponent(tokens.id_token || "google-auth-token");
+    return res.redirect(`${clientUrl}/?auth_success=true&user=${userParam}&token=${tokenParam}`);
+  } catch (err) {
+    console.error("[AJIN Auth] Gagal memproses callback Google OAuth:", err.message);
+    return res.redirect(`${clientUrl}/?auth_error=${encodeURIComponent(err.message)}`);
+  }
+};
+
+/**
+ * GET /api/auth/me
+ * Mengembalikan data profil user yang sedang login
+ */
+export const getCurrentUser = async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ success: false, message: "Token otentikasi tidak ditemukan." });
+    }
+
+    const token = authHeader.replace(/^Bearer\s+/i, "");
+
+    // Jika token adalah Google ID Token, verifikasi dengan Google
+    try {
+      const clientId = (process.env.GOOGLE_CLIENT_ID || "").replace(/^"|"$/g, "").trim();
+      const oauth2Client = getOAuth2Client();
+      const ticket = await oauth2Client.verifyIdToken({
+        idToken: token,
+        audience: clientId,
+      });
+      const payload = ticket.getPayload();
+
+      return res.json({
+        success: true,
+        user: {
+          id: payload.sub,
+          email: payload.email,
+          name: payload.name,
+          picture: payload.picture,
+          role: "student",
+          provider: "google",
+        },
+      });
+    } catch {
+      // Fallback jika token lokal
+      return res.json({
+        success: true,
+        user: {
+          id: "authenticated-user",
+          name: "Pelajar SIBI",
+          role: "student",
+        },
+      });
+    }
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+/**
+ * POST /api/auth/logout
+ */
+export const logout = (req, res) => {
+  return res.json({
+    success: true,
+    message: "Berhasil keluar dari akun AJIN.",
+  });
+};
+
+/**
+ * Endpoint bawaan email/password pendaftaran
+ */
 export const register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
-
     if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Email dan kata sandi wajib diisi."
-      });
+      return res.status(400).json({ success: false, message: "Email dan kata sandi wajib diisi." });
     }
 
     if (isSupabaseConfigured && supabase) {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          data: { name: name || "Pelajar SIBI" }
-        }
+        options: { data: { name: name || "Pelajar SIBI" } },
       });
-
-      if (error) {
-        return res.status(400).json({
-          success: false,
-          message: error.message
-        });
-      }
-
-      return res.json({
-        success: true,
-        message: "Pendaftaran berhasil via Supabase Auth.",
-        user: data.user
-      });
+      if (error) return res.status(400).json({ success: false, message: error.message });
+      return res.json({ success: true, message: "Pendaftaran berhasil via Supabase Auth.", user: data.user });
     }
 
-    // Fallback Mock User
     return res.json({
       success: true,
       message: "Pendaftaran berhasil (Mode Demo Lokal).",
-      user: {
-        id: "mock-student-uuid",
-        name: name || "Pelajar SIBI",
-        email,
-        role: "student"
-      }
+      user: { id: "mock-student-uuid", name: name || "Pelajar SIBI", email, role: "student" },
     });
   } catch (err) {
-    console.error("Auth register error:", err);
-    return res.status(500).json({
-      success: false,
-      message: "Terjadi kesalahan pada registrasi pengguna."
-    });
+    return res.status(500).json({ success: false, message: "Terjadi kesalahan pada registrasi." });
   }
 };
 
+/**
+ * Endpoint bawaan email/password login
+ */
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-
     if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Email dan kata sandi wajib diisi."
-      });
+      return res.status(400).json({ success: false, message: "Email dan kata sandi wajib diisi." });
     }
 
     if (isSupabaseConfigured && supabase) {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-
-      if (error) {
-        return res.status(401).json({
-          success: false,
-          message: error.message
-        });
-      }
-
-      return res.json({
-        success: true,
-        message: "Login berhasil via Supabase Auth.",
-        session: data.session,
-        user: data.user
-      });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) return res.status(401).json({ success: false, message: error.message });
+      return res.json({ success: true, message: "Login berhasil via Supabase Auth.", session: data.session, user: data.user });
     }
 
-    // Fallback Mock Login
     return res.json({
       success: true,
       message: "Login berhasil (Mode Demo Lokal).",
-      user: {
-        id: "mock-student-uuid",
-        name: "Pelajar SIBI",
-        email,
-        role: "student"
-      },
-      token: "mock-jwt-token-ajin"
+      user: { id: "mock-student-uuid", name: "Pelajar SIBI", email, role: "student" },
+      token: "mock-jwt-token-ajin",
     });
   } catch (err) {
-    console.error("Auth login error:", err);
-    return res.status(500).json({
-      success: false,
-      message: "Terjadi kesalahan pada login pengguna."
-    });
+    return res.status(500).json({ success: false, message: "Terjadi kesalahan pada login." });
   }
 };

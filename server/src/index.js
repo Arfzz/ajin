@@ -14,6 +14,7 @@ import alphabetRoutes from "./routes/alphabetRoutes.js";
 import progressRoutes from "./routes/progressRoutes.js";
 import telemetryRoutes from "./routes/telemetryRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
+import { googleAuthCallback } from "./controllers/authController.js";
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -45,6 +46,9 @@ app.use("/api/progress", progressRoutes);
 app.use("/api/telemetry", telemetryRoutes);
 app.use("/api/ai", aiRoutes);
 
+// Alias rute root untuk callback Google OAuth jika redirect_uri tanpa prefix /api
+app.get("/auth/google/callback", googleAuthCallback);
+
 // Global Error Handler
 app.use((err, req, res, next) => {
   console.error("Server Error:", err);
@@ -58,6 +62,21 @@ app.listen(PORT, () => {
   console.log(`===============================================`);
   console.log(`  AJIN SIBI Backend berjalan pada port ${PORT}`);
   console.log(`  Endpoint Health Check: http://localhost:${PORT}/api/health`);
-  console.log(`  Endpoint Alfabet:      http://localhost:${PORT}/api/alphabets`);
+  console.log(`  Endpoint Google Auth:  http://localhost:${PORT}/api/auth/google`);
   console.log(`===============================================`);
 });
+
+// Listener pendamping jika GOOGLE_REDIRECT_URI menggunakan port 8000
+const redirectUri = process.env.GOOGLE_REDIRECT_URI || "";
+if (redirectUri.includes(":8000")) {
+  try {
+    const server8000 = app.listen(8000, () => {
+      console.log(`  AJIN OAuth Callback Listener aktif pada port 8000`);
+    });
+    server8000.on("error", (e) => {
+      console.warn(`[AJIN Auth] Listener port 8000 dilewati (${e.message}). Callback tetap aktif di port ${PORT}.`);
+    });
+  } catch (e) {
+    console.warn(`[AJIN Auth] Port 8000 tidak dapat dibuka:`, e.message);
+  }
+}

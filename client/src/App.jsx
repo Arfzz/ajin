@@ -10,6 +10,8 @@ import { AiCompanionPage } from "./pages/AiCompanionPage";
 import { QuizPage } from "./pages/QuizPage";
 import { AnalyticsPage } from "./pages/AnalyticsPage";
 import { CustomCursor } from "./components/creative/CustomCursor";
+import { KineticPreloader } from "./components/creative/KineticPreloader";
+import { AuthProvider } from "./context/AuthContext";
 
 export function App() {
   // Model hook terpusat: MediaPipe HandLandmarker + EfficientNet-B0 ONNX
@@ -23,31 +25,35 @@ export function App() {
 
   return (
     <Router>
-      <SmoothScroll>
-        <div className="flex flex-col min-h-screen bg-paper text-ink">
-          {/* Custom Neobrutalist Pointer Cursor */}
-          <CustomCursor />
+      <AuthProvider>
+        {/* Creative Kinetic Neobrutalism Preloader saat pertama buka */}
+        <KineticPreloader />
 
-          {/* Navbar Global */}
-          <Navbar isSimulationMode={modelHook.isSimulationMode} />
+        <SmoothScroll>
+          <div className="flex flex-col min-h-screen bg-paper text-ink">
+            {/* Custom Neobrutalist Pointer Cursor */}
+            <CustomCursor />
 
-          {/* Konten Utama Berdasarkan Rute */}
-          <main className="flex-grow">
-            <Routes>
-              <Route path="/" element={<HomePage isSimulationMode={modelHook.isSimulationMode} />} />
-              <Route path="/kamus" element={<DictionaryPage />} />
-              <Route path="/latihan" element={<PracticePage modelHook={modelHook} />} />
-              <Route path="/narasi" element={<AiCompanionPage modelHook={modelHook} />} />
-              <Route path="/kuis" element={<QuizPage modelHook={modelHook} />} />
-              <Route path="/analitik" element={<AnalyticsPage />} />
-            </Routes>
-          </main>
+            {/* Navbar Global */}
+            <Navbar isSimulationMode={modelHook.isSimulationMode} />
 
-          {/* Footer Neobrutalism Berenergi */}
-          <footer className="border-t-[3px] border-ink bg-paper-2 py-12">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6">
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
-                {/* Brand & Mission */}
+            {/* Konten Utama Berdasarkan Rute */}
+            <main className="flex-grow">
+              <Routes>
+                <Route path="/" element={<HomePage isSimulationMode={modelHook.isSimulationMode} />} />
+                <Route path="/kamus" element={<DictionaryPage />} />
+                <Route path="/latihan" element={<PracticePage modelHook={modelHook} />} />
+                <Route path="/narasi" element={<AiCompanionPage modelHook={modelHook} />} />
+                <Route path="/kuis" element={<QuizPage modelHook={modelHook} />} />
+                <Route path="/analitik" element={<AnalyticsPage />} />
+              </Routes>
+            </main>
+
+            {/* Footer Neobrutalism Berenergi */}
+            <footer className="border-t-[3px] border-ink bg-paper-2 py-12">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+                  {/* Brand & Mission */}
                 <div className="md:col-span-5 space-y-4">
                   <div className="flex items-center gap-2.5">
                     <span className="w-9 h-9 bg-yellow border-2 border-ink shadow-[2px_2px_0_#111] flex items-center justify-center font-mono font-black text-base text-ink">
@@ -103,6 +109,7 @@ export function App() {
           </footer>
         </div>
       </SmoothScroll>
+      </AuthProvider>
     </Router>
   );
 }
