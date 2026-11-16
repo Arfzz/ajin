@@ -276,7 +276,7 @@ export const PracticePage = ({ modelHook }) => {
                     Simulasi Gerakan Tangan:
                   </span>
                   <span className="text-[10px] font-mono text-cobalt font-bold">
-                    Putar Ulang ↺
+                    Putar Ulang
                   </span>
                 </div>
                 <GuidePlayer
