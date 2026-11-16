@@ -292,7 +292,7 @@ export const useSibiModel = (options = {}) => {
     handLandmarkerPath = "/model/hand_landmarker.task",
     labelsPath = "/model/labels.json",
     confidenceThreshold = 65,
-    holdDurationMs = 1500,
+    holdDurationMs = 1000,
   } = options;
 
   const [onnxSession, setOnnxSession] = useState(() => globalPipelineData?.onnxSession || null);
@@ -429,7 +429,7 @@ export const useSibiModel = (options = {}) => {
       }
     }
 
-    const isStable = dominantCount >= 6 && confidence >= confidenceThreshold;
+    const isStable = dominantCount >= 5 && confidence >= confidenceThreshold;
     const now = performance.now();
 
     let isHolding = false;

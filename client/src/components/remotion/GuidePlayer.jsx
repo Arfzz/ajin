@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { SibiGuideVideo } from "./SibiGuideVideo";
-import { Play, Pause, RefreshCw } from "lucide-react";
+import { Play, Pause, RotateCcw } from "lucide-react";
 
 export const GuidePlayer = ({
   letter = "A",
@@ -10,7 +10,6 @@ export const GuidePlayer = ({
 }) => {
   const [frame, setFrame] = useState(0);
   const [isPlaying, setIsPlaying] = useState(autoPlay);
-  const reqRef = useRef(null);
 
   useEffect(() => {
     let animId;
@@ -25,32 +24,35 @@ export const GuidePlayer = ({
   }, [isPlaying]);
 
   return (
-    <div className={`relative rounded-2xl overflow-hidden border border-slate-800 bg-slate-950 shadow-xl ${className}`}>
+    <div className={`relative border-[2.5px] border-ink bg-paper shadow-[4px_4px_0_#111] overflow-hidden ${className}`}>
       {/* Canvas Player Area */}
       <div className="w-full aspect-video sm:aspect-auto sm:h-80 md:h-96">
         <SibiGuideVideo currentLetter={letter} isDynamic={isDynamic} frame={frame} />
       </div>
 
-      {/* Mini Controls Bar */}
-      <div className="absolute top-3 right-3 flex items-center gap-2 bg-slate-900/80 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-slate-700/60 z-20">
+      {/* Mini Controls Bar Neobrutalism */}
+      <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-paper p-1 border-[2px] border-ink shadow-[2px_2px_0_#111] z-20">
         <button
+          type="button"
           onClick={() => setIsPlaying(!isPlaying)}
-          className="p-1 text-white/70 hover:text-white transition-colors focus:outline-none"
-          title={isPlaying ? "Jeda Animasi" : "Putar Animasi"}
-          aria-label={isPlaying ? "Jeda Animasi" : "Putar Animasi"}
+          className={`p-1.5 border border-ink text-ink font-mono transition-transform hover:translate-x-[1px] hover:translate-y-[1px] ${
+            isPlaying ? "bg-yellow" : "bg-mint"
+          }`}
+          title={isPlaying ? "Jeda Simulasi" : "Putar Simulasi"}
+          aria-label={isPlaying ? "Jeda Simulasi" : "Putar Simulasi"}
         >
-          {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+          {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
         </button>
         <button
+          type="button"
           onClick={() => setFrame(0)}
-          className="p-1 text-white/70 hover:text-white transition-colors focus:outline-none"
-          title="Ulangi Animasi"
-          aria-label="Ulangi Animasi"
+          className="p-1.5 border border-ink bg-paper-2 hover:bg-yellow text-ink transition-transform hover:translate-x-[1px] hover:translate-y-[1px]"
+          title="Ulangi dari Awal"
+          aria-label="Ulangi dari Awal"
         >
-          <RefreshCw className="w-3.5 h-3.5" />
+          <RotateCcw className="w-3.5 h-3.5" />
         </button>
       </div>
     </div>
   );
 };
-

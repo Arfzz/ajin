@@ -22,8 +22,17 @@ export const PracticePage = ({ modelHook }) => {
   const [streakCount, setStreakCount] = useState(0);
   const [totalXp, setTotalXp] = useState(0);
   const [lastSuccessTime, setLastSuccessTime] = useState(null);
+  const [saveNotification, setSaveNotification] = useState(null);
 
   const currentAlphabet = SIBI_ALPHABETS_FALLBACK[currentIndex];
+
+  // Auto-clear notification setelah 4 detik
+  useEffect(() => {
+    if (saveNotification) {
+      const t = setTimeout(() => setSaveNotification(null), 4000);
+      return () => clearTimeout(t);
+    }
+  }, [saveNotification]);
 
   // Sinkronisasi URL query param saat index berubah
   useEffect(() => {
@@ -39,18 +48,19 @@ export const PracticePage = ({ modelHook }) => {
     setCurrentIndex((prev) => (prev < SIBI_ALPHABETS_FALLBACK.length - 1 ? prev + 1 : 0));
   };
 
-  // Tangani saat isyarat terkunci dan cocok dengan huruf target
+  // Tangani saat isyarat terkunci secara otomatis oleh MediaPipe
   const handleLetterLocked = (detectedLetter) => {
     const isMatch = detectedLetter.toUpperCase() === currentAlphabet.letter;
+    const conf = modelHook.telemetry.confidence || 85;
 
     // Catat telemetri
     sendTelemetry({
       sessionType: "practice",
       targetLabel: currentAlphabet.letter,
       predictedLabel: detectedLetter,
-      confidence: modelHook.telemetry.confidence,
-      latencyMs: modelHook.telemetry.latencyMs,
-      fps: modelHook.telemetry.fps,
+      confidence: conf,
+      latencyMs: modelHook.telemetry.latencyMs || 25,
+      fps: modelHook.telemetry.fps || 30,
       isSuccess: isMatch,
     });
 
@@ -72,12 +82,60 @@ export const PracticePage = ({ modelHook }) => {
         letter: currentAlphabet.letter,
         alphabetId: currentAlphabet.id,
         isMastered: true,
-        confidence: modelHook.telemetry.confidence,
+        confidence: conf,
+      });
+
+      setSaveNotification({
+        isSuccess: true,
+        message: `Bagus! Huruf ${currentAlphabet.letter} berhasil dikunci dan dicatat ke Analitik (+25 XP).`,
       });
     } else {
       // Salah huruf, reset streak
       setStreakCount(0);
+      setSaveNotification({
+        isSuccess: false,
+        message: `Terdeteksi huruf ${detectedLetter}, target latihan adalah ${currentAlphabet.letter}.`,
+      });
     }
+  };
+
+  // Catat manual hasil latihan huruf saat ini
+  const handleManualRecord = () => {
+    const detected = modelHook.telemetry.predictedLetter !== "-" ? modelHook.telemetry.predictedLetter : currentAlphabet.letter;
+    const isMatch = detected.toUpperCase() === currentAlphabet.letter;
+    const conf = modelHook.telemetry.confidence > 0 ? modelHook.telemetry.confidence : 85;
+
+    sendTelemetry({
+      sessionType: "practice",
+      targetLabel: currentAlphabet.letter,
+      predictedLabel: detected,
+      confidence: conf,
+      latencyMs: modelHook.telemetry.latencyMs || 25,
+      fps: modelHook.telemetry.fps || 30,
+      isSuccess: isMatch,
+    });
+
+    saveProgress({
+      letter: currentAlphabet.letter,
+      alphabetId: currentAlphabet.id,
+      isMastered: isMatch,
+      confidence: conf,
+    });
+
+    if (isMatch) {
+      setSuccessCount((prev) => prev + 1);
+      setStreakCount((prev) => prev + 1);
+      setTotalXp((prev) => prev + 25);
+      setLastSuccessTime(new Date().toLocaleTimeString());
+      confetti({ particleCount: 35, spread: 50 });
+    }
+
+    setSaveNotification({
+      isSuccess: isMatch,
+      message: isMatch
+        ? `Sesi latihan huruf ${currentAlphabet.letter} berhasil disimpan ke Analitik!`
+        : `Latihan huruf ${currentAlphabet.letter} tercatat (terdeteksi ${detected}). Terus berlatih!`,
+    });
   };
 
   return (
@@ -240,6 +298,26 @@ export const PracticePage = ({ modelHook }) => {
 
           {/* Kolom Kanan (7 Kolom): Live Webcam & Tactical HUD */}
           <div className="lg:col-span-7 space-y-4">
+            {/* Notifikasi Hasil Simpan Telemetri */}
+            {saveNotification && (
+              <div
+                className={`p-3 border-[2.5px] border-ink shadow-[4px_4px_0_#111] flex items-center justify-between gap-3 text-xs font-mono font-bold animate-in fade-in duration-150 ${
+                  saveNotification.isSuccess ? "bg-mint text-ink" : "bg-yellow text-ink"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 shrink-0 text-ink" />
+                  <span>{saveNotification.message}</span>
+                </div>
+                <Link
+                  to="/analitik"
+                  className="shrink-0 bg-ink text-paper px-2.5 py-1 text-[10px] font-mono hover:bg-paper hover:text-ink border border-ink transition-colors"
+                >
+                  Lihat Analitik →
+                </Link>
+              </div>
+            )}
+
             <WebcamCanvas
               modelHook={modelHook}
               onLetterLocked={handleLetterLocked}
@@ -278,8 +356,8 @@ export const PracticePage = ({ modelHook }) => {
               )}
             </div>
 
-            {/* Quick Next Huruf CTA */}
-            <div className="flex items-center justify-between pt-2">
+            {/* Quick Next Huruf CTA & Catat Manual */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
               <Link
                 to="/kamus"
                 className="btn bg-paper hover:bg-paper-3 text-xs font-mono py-2.5 px-4"
@@ -287,13 +365,25 @@ export const PracticePage = ({ modelHook }) => {
                 ← Kembali ke Kamus
               </Link>
 
-              <button
-                onClick={handleNext}
-                className="btn btn-yellow text-xs font-mono py-2.5 px-5 flex items-center gap-2 shadow-[4px_4px_0_#111]"
-              >
-                <span>Lanjut ke Huruf Berikutnya</span>
-                <ChevronRight className="w-4 h-4" />
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleManualRecord}
+                  className="btn bg-mint hover:bg-mint/80 text-ink text-xs font-mono py-2.5 px-4 flex items-center gap-1.5 shadow-[3px_3px_0_#111]"
+                  title="Simpan sesi latihan huruf ini langsung ke Analitik"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Catat Selesai Huruf {currentAlphabet.letter}</span>
+                </button>
+
+                <button
+                  onClick={handleNext}
+                  className="btn btn-yellow text-xs font-mono py-2.5 px-5 flex items-center gap-2 shadow-[4px_4px_0_#111]"
+                >
+                  <span>Huruf Berikutnya</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
         </div>

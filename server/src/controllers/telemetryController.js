@@ -1,7 +1,37 @@
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 import { supabase, isSupabaseConfigured } from "../config/supabase.js";
 
-// In-memory telemetry log buffer
-const telemetryLogs = [];
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const TELEMETRY_FILE_PATH = path.resolve(__dirname, "../data/telemetry_store.json");
+
+// Helper muat log dari file
+const loadTelemetryFromFile = () => {
+  try {
+    if (fs.existsSync(TELEMETRY_FILE_PATH)) {
+      const raw = fs.readFileSync(TELEMETRY_FILE_PATH, "utf8");
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (err) {
+    console.warn("[AJIN Telemetry] Gagal membaca telemetry_store.json:", err.message);
+  }
+  return [];
+};
+
+// Helper simpan log ke file
+const saveTelemetryToFile = (logs) => {
+  try {
+    fs.writeFileSync(TELEMETRY_FILE_PATH, JSON.stringify(logs.slice(0, 1000), null, 2), "utf8");
+  } catch (err) {
+    console.warn("[AJIN Telemetry] Gagal menulis telemetry_store.json:", err.message);
+  }
+};
+
+// In-memory cache yang tersinkronisasi dengan file
+const telemetryLogs = loadTelemetryFromFile();
 
 export const logTelemetry = async (req, res) => {
   try {
@@ -18,7 +48,7 @@ export const logTelemetry = async (req, res) => {
     } = req.body;
 
     const logEntry = {
-      id: telemetryLogs.length + 1,
+      id: Date.now() + Math.floor(Math.random() * 1000),
       userId,
       sessionType,
       targetLabel: targetLabel || "-",
@@ -33,10 +63,13 @@ export const logTelemetry = async (req, res) => {
 
     telemetryLogs.unshift(logEntry);
 
-    // Batasi log memori maksimum 1000 entri terbaru
+    // Batasi log maksimum 1000 entri terbaru
     if (telemetryLogs.length > 1000) {
       telemetryLogs.pop();
     }
+
+    // Simpan ke file disk agar tidak hilang saat server restart
+    saveTelemetryToFile(telemetryLogs);
 
     if (isSupabaseConfigured && supabase) {
       await supabase.from("session_telemetries").insert({
@@ -68,11 +101,11 @@ export const logTelemetry = async (req, res) => {
 
 export const getTelemetrySummary = async (req, res) => {
   try {
-    const { userId } = req.query;
+    const { userId, guestId } = req.query;
 
     let logs = [...telemetryLogs];
     if (userId && userId !== "all") {
-      logs = logs.filter((l) => l.userId === userId);
+      logs = logs.filter((l) => l.userId === userId || (guestId && l.userId === guestId));
     }
 
     // Jika Supabase aktif dan user bukan guest, ambil juga dari database

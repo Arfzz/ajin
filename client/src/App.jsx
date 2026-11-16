@@ -22,7 +22,7 @@ export function App() {
     handLandmarkerPath: "/model/hand_landmarker.task",
     labelsPath: "/model/labels.json",
     confidenceThreshold: 65,
-    holdDurationMs: 1500,
+    holdDurationMs: 1000,
   });
 
   return (

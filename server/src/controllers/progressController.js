@@ -1,7 +1,44 @@
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 import { supabase, isSupabaseConfigured } from "../config/supabase.js";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const PROGRESS_FILE_PATH = path.resolve(__dirname, "../data/progress_store.json");
+
+// Helper muat progres dari file
+const loadProgressFromFile = () => {
+  const store = new Map();
+  try {
+    if (fs.existsSync(PROGRESS_FILE_PATH)) {
+      const raw = fs.readFileSync(PROGRESS_FILE_PATH, "utf8");
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        parsed.forEach((item) => {
+          const key = `${item.userId}-${item.letter || item.alphabetId}`;
+          store.set(key, item);
+        });
+      }
+    }
+  } catch (err) {
+    console.warn("[AJIN Progress] Gagal membaca progress_store.json:", err.message);
+  }
+  return store;
+};
+
+// Helper simpan progres ke file
+const saveProgressToFile = (store) => {
+  try {
+    const list = Array.from(store.values());
+    fs.writeFileSync(PROGRESS_FILE_PATH, JSON.stringify(list, null, 2), "utf8");
+  } catch (err) {
+    console.warn("[AJIN Progress] Gagal menulis progress_store.json:", err.message);
+  }
+};
+
 // In-memory store untuk progress saat Supabase belum dikonfigurasi
-const memoryProgressStore = new Map();
+const memoryProgressStore = loadProgressFromFile();
 
 export const updateProgress = async (req, res) => {
   try {
@@ -33,6 +70,7 @@ export const updateProgress = async (req, res) => {
     };
 
     memoryProgressStore.set(key, updated);
+    saveProgressToFile(memoryProgressStore);
 
     if (isSupabaseConfigured && supabase && userId !== "guest-user") {
       await supabase.from("user_progress").upsert({

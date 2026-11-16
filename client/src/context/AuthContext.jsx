@@ -33,6 +33,22 @@ export const AuthProvider = ({ children }) => {
           localStorage.setItem("ajin_token", decodeURIComponent(tokenParam));
         }
 
+        // Sinkronisasikan log latihan tamu lokal ke akun pengguna yang baru login
+        try {
+          const rawLogs = localStorage.getItem("ajin_telemetry_logs");
+          if (rawLogs) {
+            const logs = JSON.parse(rawLogs);
+            if (Array.isArray(logs)) {
+              const userTargetId = parsedUser.id || parsedUser.sub || parsedUser.email;
+              const migrated = logs.map((l) => ({
+                ...l,
+                userId: l.userId?.startsWith("guest") ? userTargetId : l.userId,
+              }));
+              localStorage.setItem("ajin_telemetry_logs", JSON.stringify(migrated));
+            }
+          }
+        } catch {}
+
         setAuthNotification({
           type: "success",
           message: `Selamat datang, ${parsedUser.name}! Berhasil masuk dengan Google.`,
