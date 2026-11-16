@@ -12,6 +12,7 @@ import { AnalyticsPage } from "./pages/AnalyticsPage";
 import { PhotoRecognitionPage } from "./pages/PhotoRecognitionPage";
 import { CustomCursor } from "./components/creative/CustomCursor";
 import { KineticPreloader } from "./components/creative/KineticPreloader";
+import { AjinVoiceAssistant } from "./components/chat/AjinVoiceAssistant";
 import { AuthProvider } from "./context/AuthContext";
 
 export function App() {
@@ -34,6 +35,9 @@ export function App() {
           <div className="flex flex-col min-h-screen bg-paper text-ink">
             {/* Custom Neobrutalist Pointer Cursor */}
             <CustomCursor />
+
+            {/* Asisten Suara & Chatbot Global AJIN */}
+            <AjinVoiceAssistant />
 
             {/* Navbar Global */}
             <Navbar isSimulationMode={modelHook.isSimulationMode} />

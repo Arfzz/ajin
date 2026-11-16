@@ -156,3 +156,18 @@ export const fetchTelemetrySummary = async (userId) => {
     };
   }
 };
+
+export const sendAiChatMessage = async (message, history = []) => {
+  try {
+    const res = await api.post("/ai/chat", { message, history });
+    return res.data;
+  } catch (err) {
+    const msg = err.response?.data?.message || err.message || "Gagal mengirim pesan ke asisten.";
+    return {
+      success: false,
+      message: msg,
+      reply: "Maaf, terjadi kendala saat menghubungi asisten AI AJIN.",
+    };
+  }
+};
+

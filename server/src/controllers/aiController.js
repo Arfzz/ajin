@@ -364,3 +364,93 @@ WAJIB balas HANYA dalam format JSON valid berikut tanpa blok markdown tambahan d
   }
 };
 
+/**
+ * POST /api/ai/chat
+ * Body: { message: string, history?: Array<{ role: string, text: string }> }
+ *
+ * Chatbot percakapan & asisten suara cerdas untuk pembelajaran SIBI
+ */
+export const chatWithAi = async (req, res) => {
+  try {
+    const { message, history = [] } = req.body;
+
+    if (!message || typeof message !== "string" || !message.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Pesan percakapan tidak boleh kosong.",
+      });
+    }
+
+    const genAI = getGeminiClient();
+    const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+
+    // Format riwayat percakapan terkini jika ada
+    const historyContext = Array.isArray(history) && history.length > 0
+      ? history
+          .slice(-6)
+          .map((h) => `${h.role === "user" ? "Pengguna" : "Asisten"}: ${h.text}`)
+          .join("\n")
+      : "Belum ada percakapan sebelumnya.";
+
+    const prompt = `Kamu adalah AJIN Voice Assistant & Chatbot, asisten pintar dan ramah untuk platform pembelajaran Sistem Isyarat Bahasa Indonesia (SIBI).
+
+Karakter & Gaya Komunikasi:
+- Ramah, empatik, suportif, dan sangat menguasai kaidah 26 alfabet SIBI resmi (posisi jari, orientasi telapak, perbedaan huruf yang rawan tertukar).
+- Berbicara dalam Bahasa Indonesia yang alami, ringkas, dan jelas (tidak bertele-tele).
+- Jika pengguna bertanya cara membentuk huruf, jelaskan posisi jemari secara visual dan praktis.
+- Jika pengguna meminta untuk latihan (misal: "saya mau latihan huruf B" atau "buka latihan"), tentukan "targetLetter" dan "suggestedAction": "practice".
+- Jika pengguna meminta melihat kamus, tentukan "suggestedAction": "dictionary".
+- Jika pengguna meminta scan/foto, tentukan "suggestedAction": "photo".
+
+Riwayat percakapan terkini:
+${historyContext}
+
+Pesan terbaru dari pengguna:
+"${message.trim()}"
+
+WAJIB balas HANYA dalam format JSON valid berikut tanpa blok markdown tambahan dan tanpa teks lain di luar kurung kurawal:
+{
+  "reply": "<jawaban percakapan yang ramah, informatif, dan ringkas>",
+  "targetLetter": "<huruf A-Z kapital jika topik mengerucut ke huruf tertentu, atau null>",
+  "suggestedAction": "<'practice' | 'dictionary' | 'photo' | 'quiz' | null>",
+  "tips": "<tips singkat 1 kalimat terkait gestur jika relevan, atau null>"
+}`;
+
+    const result = await model.generateContent(prompt);
+    const responseText = result.response.text().trim();
+
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error("Gagal membaca struktur respons JSON dari model.");
+    }
+
+    const parsed = JSON.parse(jsonMatch[0]);
+
+    return res.json({
+      success: true,
+      reply: parsed.reply || "Halo! Ada yang bisa saya bantu seputar pembelajaran Sistem Isyarat Bahasa Indonesia (SIBI)?",
+      targetLetter: parsed.targetLetter ? String(parsed.targetLetter).toUpperCase().trim() : null,
+      suggestedAction: parsed.suggestedAction || null,
+      tips: parsed.tips || null,
+    });
+  } catch (err) {
+    console.error("[AJIN AI] Error chatbot percakapan:", err.message);
+
+    if (err.message.includes("GEMINI_API_KEY")) {
+      return res.status(503).json({
+        success: false,
+        message: "Layanan AI belum dikonfigurasi. Tambahkan GEMINI_API_KEY di file .env server.",
+      });
+    }
+
+    // Fallback ramah jika model timeout
+    return res.json({
+      success: true,
+      reply: "Maaf, koneksi AI sedang sibuk. Namun kamu tetap bisa menjelajahi 26 alfabet SIBI di menu Kamus Huruf atau langsung berlatih di depan webcam pada menu Latih Kamera!",
+      targetLetter: null,
+      suggestedAction: "practice",
+      tips: "Coba ulangi pertanyaanmu dalam beberapa saat.",
+    });
+  }
+};
+

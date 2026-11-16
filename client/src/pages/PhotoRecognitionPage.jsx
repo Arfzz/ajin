@@ -369,7 +369,7 @@ export const PhotoRecognitionPage = () => {
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-mint" />
                     <span className="font-mono text-xs font-black uppercase tracking-wider text-ink">
-                      Hasil Analisis AI
+                      Hasil Analisis:
                     </span>
                   </div>
                   <span className="tag tag-mint text-[10px] font-bold">
@@ -398,9 +398,8 @@ export const PhotoRecognitionPage = () => {
                       <button
                         type="button"
                         onClick={() => handleSpeak(analysisResult.letter)}
-                        className={`btn border-[2px] border-ink p-3 shadow-[2px_2px_0_#111] flex flex-col items-center justify-center gap-1 transition-all ${
-                          isSpeaking ? "bg-coral text-white" : "bg-yellow hover:bg-yellow-dark text-ink"
-                        }`}
+                        className={`btn border-[2px] border-ink p-3 shadow-[2px_2px_0_#111] flex flex-col items-center justify-center gap-1 transition-all ${isSpeaking ? "bg-coral text-white" : "bg-yellow hover:bg-yellow-dark text-ink"
+                          }`}
                         title="Dengarkan pelafalan huruf"
                         aria-label="Dengarkan pelafalan huruf"
                       >
@@ -514,3 +513,4 @@ export const PhotoRecognitionPage = () => {
     </div>
   );
 };
+
