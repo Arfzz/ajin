@@ -15,12 +15,12 @@ import { SIBI_ALPHABETS_FALLBACK } from "../services/fallbackData";
 const DEFAULT_QUIZ_WORDS = ["BUKU", "SAYA", "KITA", "AJIN", "BAIK"];
 
 const CATEGORIES = [
-  { id: "umum", label: "Umum", icon: "🌐" },
-  { id: "hewan", label: "Hewan", icon: "🐾" },
-  { id: "makanan", label: "Makanan", icon: "🍎" },
-  { id: "benda", label: "Benda", icon: "📦" },
-  { id: "alam", label: "Alam", icon: "🌿" },
-  { id: "keluarga", label: "Keluarga", icon: "👨‍👩‍👧" },
+  { id: "umum", label: "Umum" },
+  { id: "hewan", label: "Hewan" },
+  { id: "makanan", label: "Makanan" },
+  { id: "benda", label: "Benda" },
+  { id: "alam", label: "Alam" },
+  { id: "keluarga", label: "Keluarga" },
 ];
 
 const DIFFICULTIES = [
@@ -153,19 +153,19 @@ export const QuizPage = ({ modelHook }) => {
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <div className="flex flex-wrap items-center gap-2 mb-2">
-              <span className="sticker sticker-coral px-2.5 py-0.5 text-xs font-mono uppercase rotated-label">
-                🎯 Mode Tantangan
+              <span className="tag tag-coral text-xs font-mono font-bold">
+                Mode Tantangan
               </span>
-              <span className="sticker sticker-yellow px-2.5 py-0.5 text-xs font-mono uppercase">
-                ⚡ Eja Kosakata SIBI
+              <span className="tag tag-yellow text-xs font-mono font-bold">
+                Eja Kosakata SIBI
               </span>
               {isAiGenerated ? (
-                <span className="sticker sticker-cobalt px-2.5 py-0.5 text-xs font-mono uppercase flex items-center gap-1">
+                <span className="tag tag-cobalt text-xs font-mono uppercase flex items-center gap-1 font-bold">
                   <Sparkles className="w-3 h-3 text-yellow" />
                   Gemini AI
                 </span>
               ) : (
-                <span className="sticker sticker-mint px-2.5 py-0.5 text-xs font-mono uppercase">
+                <span className="tag tag-mint text-xs font-mono uppercase font-bold">
                   Bank Kata Standar
                 </span>
               )}
@@ -226,7 +226,7 @@ export const QuizPage = ({ modelHook }) => {
                         : "bg-paper hover:bg-paper-3"
                     }`}
                   >
-                    <span>{cat.icon} {cat.label}</span>
+                    <span>{cat.label}</span>
                   </button>
                 ))}
               </div>
@@ -395,8 +395,8 @@ export const QuizPage = ({ modelHook }) => {
                 </div>
 
                 <div className="flex items-center justify-center gap-2 mb-2">
-                  <span className="sticker sticker-yellow px-2 py-0.5 text-xs font-mono uppercase">
-                    🎉 SEMUA KATA BERHASIL DIEJA!
+                  <span className="tag tag-yellow px-2.5 py-1 text-xs font-mono uppercase font-bold">
+                    SEMUA KATA BERHASIL DIEJA!
                   </span>
                 </div>
 

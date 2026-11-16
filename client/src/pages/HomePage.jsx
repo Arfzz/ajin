@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useScroll, useTransform, motion, useInView } from "framer-motion";
-import { Camera, BookOpen, MessageSquare, Zap, Shield, BarChart2, Award, Sparkles, Layers, Volume2, ChevronLeft, ChevronRight, Activity, ArrowUpRight, CheckCircle2, Hand } from "lucide-react";
+import { Camera, BookOpen, MessageSquare, Zap, Shield, BarChart2, Award, Sparkles, Layers, Volume2, ChevronLeft, ChevronRight, Activity, ArrowUpRight, CheckCircle2, Hand, Check } from "lucide-react";
 import { SIBI_ALPHABETS_FALLBACK } from "../services/fallbackData";
 import ShapeGrid from "../components/reactbits/ShapeGrid";
 import TextType from "../components/reactbits/TextType";
@@ -59,18 +59,12 @@ const Hero = ({ isSimulationMode }) => {
             style={{ y: leftY }}
             className="flex-1 flex flex-col justify-center py-20 lg:py-28 lg:pr-12 lg:border-r-[2.5px] lg:border-ink pointer-events-auto"
           >
-            {/* Sticker "Gratis" — gimmick neobrutalist */}
+            {/* Label Utama */}
             <div className="flex items-center gap-3 mb-8">
-              <span
-                className="sticker sticker-coral px-3 py-1.5 text-sm rotated-label"
-                style={{ boxShadow: "3px 3px 0 #111" }}
-              >
-                100% Gratis
-              </span>
-              <span className="tag">Bahasa Isyarat Indonesia</span>
+              <span className="tag font-bold">Bahasa Isyarat Indonesia</span>
             </div>
 
-            {/* Headline — Menggunakan React Bits <TextType /> */}
+            {/* Headline: Menggunakan React Bits <TextType /> */}
             <div className="mb-6">
               <TextType
                 as="h1"
@@ -148,7 +142,6 @@ const Hero = ({ isSimulationMode }) => {
           {[...SIBI_ALPHABETS_FALLBACK, ...SIBI_ALPHABETS_FALLBACK].map((item, i) => (
             <span key={i} className="px-5 border-r-2 border-ink/20 flex items-center gap-2">
               {item.letter}
-              {item.gestureType === "dynamic" && <span className="text-[9px] opacity-50">★</span>}
             </span>
           ))}
         </div>
@@ -203,26 +196,18 @@ const LetterViewfinder = ({ isSimulationMode }) => {
     <div className="relative w-full max-w-md mx-auto select-none">
       {/* Kartu Belakang: Aksen Kuning Neobrutalisme Bertumpuk */}
       <div
-        className="absolute inset-0 bg-yellow border-[3px] border-ink shadow-[8px_8px_0_#111] rotate-2 transform translate-x-2 translate-y-3 pointer-events-none"
+        className="absolute inset-0 bg-yellow border-[3px] border-ink shadow-[8px_8px_0_#111] translate-x-2 translate-y-3 pointer-events-none"
         aria-hidden="true"
       >
         <div className="absolute bottom-3 right-4 flex items-center gap-2 font-mono text-[10px] font-black uppercase text-ink/80">
-          <span>★ 26 Alfabet SIBI</span>
+          <span>26 Alfabet SIBI</span>
           <span>•</span>
           <span>AI Vision</span>
         </div>
       </div>
 
       {/* Kartu Depan: Kartu Utama Putih Bersih Bergaya Tactile */}
-      <div className="relative z-10 bg-paper border-[3px] border-ink shadow-[6px_6px_0_#111] p-6 sm:p-7 rotate-[-1deg] transition-all duration-300 hover:rotate-0">
-        {/* Floating Sticker Pojok Kanan Atas */}
-        <div className="absolute -top-4 -right-3 z-20">
-          <span className="sticker sticker-coral px-3 py-1 text-xs font-mono font-black uppercase rotate-6 shadow-[3px_3px_0_#111] flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Coba Isyarat</span>
-          </span>
-        </div>
-
+      <div className="relative z-10 bg-paper border-[3px] border-ink shadow-[6px_6px_0_#111] p-6 sm:p-7 transition-all duration-300">
         {/* Top Header Card */}
         <div className="flex items-center justify-between mb-5 pb-3 border-b-2 border-ink/15">
           <div className="flex items-center gap-2">
@@ -236,7 +221,7 @@ const LetterViewfinder = ({ isSimulationMode }) => {
               isDynamic ? "tag-coral" : "tag-mint"
             }`}
           >
-            {isDynamic ? "💫 Gerak Dinamis" : "✋ Gestur Statis"}
+            {isDynamic ? "Gerak Dinamis" : "Gestur Statis"}
           </span>
         </div>
 
@@ -448,9 +433,6 @@ const HowItWorks = () => {
         <div className="flex items-end justify-between mb-16 flex-wrap gap-4">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <span className="sticker sticker-yellow px-2.5 py-0.5 text-xs font-mono uppercase rotated-label shadow-[2px_2px_0_#111]">
-                🃏 Deck Kartu Bertumpuk
-              </span>
               <span className="tag tag-ink text-xs font-mono">
                 {isStacked ? "Posisi: Bertumpuk" : "Posisi: Terbuka"}
               </span>
@@ -472,12 +454,6 @@ const HowItWorks = () => {
               <Layers className="w-4 h-4 text-ink" />
               <span>{manualStack ? "Buka Kartu" : "Tumpuk Ulang Kartu"}</span>
             </button>
-            <span
-              className="sticker sticker-coral px-3 py-1.5 text-sm rotated-label-2 hidden sm:flex shadow-[3px_3px_0_#111]"
-              aria-hidden="true"
-            >
-              100% Gratis ✓
-            </span>
           </div>
         </div>
 
@@ -604,7 +580,7 @@ const Features = () => {
               <span className="text-white/90 font-mono mx-1">→</span>
               <span className="border-2 border-white/30 px-3 py-2 text-white font-bold text-sm"
                 style={{ boxShadow: "3px 3px 0 rgba(255,255,255,0.15)" }}>
-                &ldquo;KITA&rdquo; 🔊
+                &ldquo;KITA&rdquo;
               </span>
             </div>
           </div>
@@ -615,17 +591,10 @@ const Features = () => {
             <div className="card border-b-0 p-6 flex flex-col justify-between flex-1"
               style={{ borderColor: "#111" }}>
               <div>
-                <div className="flex items-start justify-between mb-3">
+                <div className="mb-3">
                   <h3 className="font-display font-black text-lg text-ink leading-tight">
                     Kameramu tidak kemana-mana.
                   </h3>
-                  <span
-                    className="sticker sticker-mint text-xs px-2 py-1 ml-2 flex-shrink-0 rotated-label"
-                    style={{ boxShadow: "2px 2px 0 #111" }}
-                    aria-hidden="true"
-                  >
-                    Private
-                  </span>
                 </div>
                 <p className="font-sans text-sm text-ink/90 leading-relaxed font-medium">
                   Semua inferensi AI berjalan langsung di perambanmu. Tidak ada
@@ -674,19 +643,19 @@ const HorizontalRoadmap = () => {
   const modes = [
     {
       num: "01",
-      badge: "★ 26 HURUF LENGKAP",
+      badge: "26 HURUF LENGKAP",
       badgeColor: "sticker-yellow",
-      title: "Kamus Isyarat A–Z",
+      title: "Kamus Isyarat A-Z",
       desc: "Pelajari konfigurasi jari dari huruf A sampai Z dengan simulasi visual 3D dan tips posisi tangan agar tidak tertukar.",
       cta: "Buka Kamus",
       to: "/kamus",
       bg: "bg-theme-yellow",
       textColor: "text-ink",
-      icon: "📖",
+      icon: BookOpen,
     },
     {
       num: "02",
-      badge: "⚡ AI CV REAL-TIME",
+      badge: "AI CV REAL-TIME",
       badgeColor: "sticker-cobalt",
       title: "Dojo Latihan Kamera",
       desc: "Uji ketangkasan tanganmu langsung di depan webcam. Model AI memverifikasi isyaratmu dan mengunci huruf dalam 1.5 detik.",
@@ -694,11 +663,11 @@ const HorizontalRoadmap = () => {
       to: "/latihan",
       bg: "bg-theme-cobalt",
       textColor: "text-white",
-      icon: "📷",
+      icon: Camera,
     },
     {
       num: "03",
-      badge: "🎮 SPEED RUN EJA",
+      badge: "SPEED RUN EJA",
       badgeColor: "sticker-coral",
       title: "Arena Kuis Eja Kata",
       desc: "Eja kata-kata kosakata populer (BUKU, SAYA, KITA) dalam tantangan berbatas waktu dengan streak multiplier dan skor EXP.",
@@ -706,11 +675,11 @@ const HorizontalRoadmap = () => {
       to: "/kuis",
       bg: "bg-theme-coral",
       textColor: "text-white",
-      icon: "🏆",
+      icon: Award,
     },
     {
       num: "04",
-      badge: "🗣️ TEXT-TO-SPEECH ID",
+      badge: "TEXT-TO-SPEECH ID",
       badgeColor: "sticker-mint",
       title: "Studio Narasi Kalimat",
       desc: "Rangkai kata demi kata dari gerakan jemarimu menjadi kalimat utuh, lalu bunyikan suara sintetis bahasa Indonesia.",
@@ -718,11 +687,11 @@ const HorizontalRoadmap = () => {
       to: "/narasi",
       bg: "bg-theme-mint",
       textColor: "text-ink",
-      icon: "🎙️",
+      icon: Volume2,
     },
     {
       num: "05",
-      badge: "📊 RAPOR PENGUASAAN",
+      badge: "RAPOR PENGUASAAN",
       badgeColor: "sticker-yellow",
       title: "Dashboard Progres",
       desc: "Cek matriks penguasaan 26 hurufmu, rekam jejak akurasi, kecepatan deteksi FPS, dan unduh rapor kemajuan belajarmu.",
@@ -730,7 +699,7 @@ const HorizontalRoadmap = () => {
       to: "/analitik",
       bg: "bg-theme-ink",
       textColor: "text-paper",
-      icon: "📈",
+      icon: BarChart2,
     },
   ];
 
@@ -741,10 +710,7 @@ const HorizontalRoadmap = () => {
         <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <span className="sticker sticker-coral px-2.5 py-0.5 text-xs font-mono uppercase rotated-label">
-                🌀 Scroll Horizontal Interaktif
-              </span>
-              <span className="tag tag-yellow text-xs font-mono">5 Fase Belajar</span>
+              <span className="tag tag-ink text-xs font-mono">Fase Pembelajaran</span>
             </div>
             <h2 className="font-display font-black text-3xl sm:text-4xl text-ink tracking-tight">
               Alur Perjalanan <span className="highlight">Kuasai SIBI</span>
@@ -764,23 +730,25 @@ const HorizontalRoadmap = () => {
         {/* Horizontal Moving Track */}
         <div className="w-full pl-4 sm:pl-12">
           <motion.div style={{ x }} className="flex gap-6 items-stretch">
-            {modes.map((mode) => (
-              <div
-                key={mode.num}
-                className={`w-[320px] sm:w-[380px] lg:w-[420px] shrink-0 border-[3px] border-ink p-7 flex flex-col justify-between nb-lift ${mode.bg} ${mode.textColor} shadow-[6px_6px_0_#111] relative overflow-hidden`}
-              >
-                {/* Background oversized number */}
-                <span className="deco-num -right-4 -bottom-6 text-[10rem] opacity-10 select-none pointer-events-none">
-                  {mode.num}
-                </span>
+            {modes.map((mode) => {
+              const IconComp = mode.icon;
+              return (
+                <div
+                  key={mode.num}
+                  className={`w-[320px] sm:w-[380px] lg:w-[420px] shrink-0 border-[3px] border-ink p-7 flex flex-col justify-between nb-lift ${mode.bg} ${mode.textColor} shadow-[6px_6px_0_#111] relative overflow-hidden`}
+                >
+                  {/* Background oversized number */}
+                  <span className="deco-num -right-4 -bottom-6 text-[10rem] opacity-10 select-none pointer-events-none">
+                    {mode.num}
+                  </span>
 
-                <div>
-                  <div className="flex items-center justify-between mb-4 border-b-2 border-current/20 pb-3">
-                    <span className={`sticker ${mode.badgeColor} text-[10px] font-mono px-2 py-0.5 uppercase`}>
-                      {mode.badge}
-                    </span>
-                    <span className="text-3xl">{mode.icon}</span>
-                  </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-4 border-b-2 border-current/20 pb-3">
+                      <span className={`sticker ${mode.badgeColor} text-[10px] font-mono px-2 py-0.5 uppercase`}>
+                        {mode.badge}
+                      </span>
+                      <IconComp className="w-6 h-6 text-current opacity-90" />
+                    </div>
 
                   <span className="text-xs font-mono font-bold opacity-80 block mb-1">
                     Fase {mode.num}
@@ -807,7 +775,8 @@ const HorizontalRoadmap = () => {
                   </Link>
                 </div>
               </div>
-            ))}
+            );
+          })}
           </motion.div>
         </div>
       </div>
@@ -855,10 +824,7 @@ const AlphabetShowcase = () => {
         <div className="flex items-end justify-between mb-12 flex-wrap gap-4">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <span className="sticker sticker-yellow px-2.5 py-0.5 text-xs font-mono uppercase rotated-label">
-                ✨ Staggered Reveal
-              </span>
-              <span className="sticker sticker-coral px-2.5 py-0.5 text-xs font-mono uppercase">
+              <span className="tag tag-coral text-xs font-mono font-bold">
                 26 Huruf SIBI
               </span>
             </div>
@@ -866,7 +832,7 @@ const AlphabetShowcase = () => {
               className="font-display font-black text-ink leading-tight"
               style={{ fontSize: "clamp(2rem, 4.5vw, 3.5rem)" }}
             >
-              Katalog Lengkap <span className="bg-yellow text-ink px-2.5 py-0.5 inline-block -rotate-1 border-2 border-ink shadow-[3px_3px_0_#111]">A sampai Z</span>
+              Katalog Lengkap <span className="bg-yellow text-ink px-2.5 py-0.5 inline-block border-2 border-ink shadow-[3px_3px_0_#111]">A sampai Z</span>
             </h2>
             <p className="font-sans text-sm sm:text-base text-ink/80 font-medium mt-2 max-w-lg leading-relaxed">
               Setiap huruf terdaftar rapi. Arahkan kursor untuk melihat efek invert warna dan klik untuk melihat video posisi tangan!
@@ -924,7 +890,7 @@ const AlphabetShowcase = () => {
             <span className="text-coral">Gestur Dinamis J &amp; Z (2)</span>
           </span>
           <span className="ml-auto text-ink/75 text-xs hidden sm:block bg-paper-2 px-3 py-1.5 border border-ink/20">
-            💡 Tips: Sorot kartu untuk membalik warna (invert hover)
+            Tips: Sorot kartu untuk membalik warna (invert hover)
           </span>
         </div>
       </div>
@@ -1066,20 +1032,6 @@ const FinalCTA = () => {
           className="border-[3.5px] border-ink bg-theme-yellow p-8 sm:p-14 lg:p-16 shadow-[12px_12px_0_#111] relative overflow-hidden pointer-events-auto"
           style={{ backgroundColor: "#FFD000" }}
         >
-          {/* Corner Floating Badges */}
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
-            <span
-              className="sticker sticker-coral text-xs sm:text-sm px-3.5 py-1.5 font-mono uppercase rotated-label shadow-[3px_3px_0_#111]"
-            >
-              🚀 100% Client-Side WebGL
-            </span>
-            <span
-              className="sticker sticker-mint text-xs sm:text-sm px-3.5 py-1.5 font-mono uppercase rotated-label-2 shadow-[3px_3px_0_#111]"
-            >
-              ★ Tanpa Akun &amp; Gratis
-            </span>
-          </div>
-
           {/* Headline with React Bits ScrollReveal */}
           <div className="text-center my-4">
             <ScrollReveal
@@ -1106,13 +1058,13 @@ const FinalCTA = () => {
           {/* 3 Guarantee Checklist Pills */}
           <div className="flex flex-wrap justify-center gap-3 sm:gap-6 mb-10 font-mono text-xs sm:text-sm font-bold text-ink">
             <span className="flex items-center gap-2 bg-paper px-3 py-1.5 border-2 border-ink shadow-[2px_2px_0_#111]">
-              <span className="text-mint font-black">✓</span> 26 Huruf SIBI Lengkap
+              <Check className="w-4 h-4 text-mint stroke-[3]" /> 26 Huruf SIBI Lengkap
             </span>
             <span className="flex items-center gap-2 bg-paper px-3 py-1.5 border-2 border-ink shadow-[2px_2px_0_#111]">
-              <span className="text-coral font-black">✓</span> Privasi Terjaga (Lokal)
+              <Check className="w-4 h-4 text-coral stroke-[3]" /> Privasi Terjaga (Lokal)
             </span>
             <span className="flex items-center gap-2 bg-paper px-3 py-1.5 border-2 border-ink shadow-[2px_2px_0_#111]">
-              <span className="text-cobalt font-black">✓</span> Langsung Disuarakan
+              <Check className="w-4 h-4 text-cobalt stroke-[3]" /> Langsung Disuarakan
             </span>
           </div>
 

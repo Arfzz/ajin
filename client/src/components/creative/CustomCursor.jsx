@@ -86,8 +86,8 @@ export const CustomCursor = () => {
           </span>
         )}
         {cursorType === "camera" && (
-          <span className="font-mono text-[9px] font-black uppercase text-white select-none">
-            📷
+          <span className="font-mono text-[8px] font-black uppercase text-white select-none">
+            CAM
           </span>
         )}
       </motion.div>

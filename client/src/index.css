@@ -132,7 +132,7 @@ html.lenis, html.lenis body { height: auto; }
   .tag-ink     { background: var(--ink);     color: var(--paper); }
   .tag-mint    { background: var(--mint);    color: var(--ink); }
 
-  /* Sticker — rotated label untuk karakter neobrutalist */
+  /* Sticker */
   .sticker {
     border: var(--border-thick);
     box-shadow: var(--shadow);
@@ -193,13 +193,11 @@ html.lenis, html.lenis body { height: auto; }
     position: absolute;
   }
 
-  /* Rotated label — karakter neobrutalist */
+  /* Label lurus */
   .rotated-label {
-    transform: rotate(-3deg);
     display: inline-block;
   }
   .rotated-label-2 {
-    transform: rotate(2.5deg);
     display: inline-block;
   }
 

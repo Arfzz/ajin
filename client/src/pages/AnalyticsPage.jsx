@@ -100,14 +100,6 @@ export const AnalyticsPage = () => {
       <div className="border-b-[3px] border-ink bg-paper-2 py-8 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <div className="flex flex-wrap items-center gap-2 mb-2">
-              <span className="sticker sticker-yellow px-2.5 py-0.5 text-xs font-mono uppercase rotated-label">
-                Rapor Belajar SIBI
-              </span>
-              <span className="sticker sticker-mint px-2.5 py-0.5 text-xs font-mono uppercase">
-                Evaluasi Akurasi
-              </span>
-            </div>
             <h1 className="font-display font-black text-3xl sm:text-4xl text-ink tracking-tight">
               Dashboard Progres &amp; <span className="highlight">Kemahiran SIBI</span>
             </h1>

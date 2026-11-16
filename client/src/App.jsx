@@ -67,9 +67,6 @@ export function App() {
                       A
                     </span>
                     <span className="font-display font-black text-2xl text-ink tracking-tight">AJIN</span>
-                    <span className="sticker sticker-coral text-[10px] px-2 py-0.2 font-mono uppercase rotated-label">
-                      B2C Learning
-                    </span>
                   </div>
                   <p className="font-sans text-xs text-ink/70 max-w-sm font-medium leading-relaxed">
                     Platform pembelajaran Sistem Isyarat Bahasa Indonesia (SIBI) 26 alfabet berbasis computer vision dan inferensi lokal di browser.

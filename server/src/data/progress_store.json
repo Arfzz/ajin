@@ -1,0 +1,26 @@
+[
+  {
+    "userId": "114826648583079417232",
+    "letter": "A",
+    "isMastered": true,
+    "bestConfidence": 83,
+    "attemptsCount": 1,
+    "updatedAt": "2026-11-16T10:08:47.030Z"
+  },
+  {
+    "userId": "114826648583079417232",
+    "letter": "B",
+    "isMastered": true,
+    "bestConfidence": 71,
+    "attemptsCount": 1,
+    "updatedAt": "2026-11-16T10:08:55.645Z"
+  },
+  {
+    "userId": "114826648583079417232",
+    "letter": "C",
+    "isMastered": true,
+    "bestConfidence": 91,
+    "attemptsCount": 1,
+    "updatedAt": "2026-11-16T10:09:03.878Z"
+  }
+]

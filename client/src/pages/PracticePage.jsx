@@ -144,14 +144,6 @@ export const PracticePage = ({ modelHook }) => {
       <div className="border-b-[3px] border-ink bg-paper-2 py-8 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <div className="flex flex-wrap items-center gap-2 mb-2">
-              <span className="sticker sticker-yellow px-2.5 py-0.5 text-xs font-mono uppercase rotated-label">
-                🥋 Dojo Latihan SIBI
-              </span>
-              <span className="sticker sticker-cobalt px-2.5 py-0.5 text-xs font-mono uppercase">
-                ⚡ Umpan Balik Kamera Langsung
-              </span>
-            </div>
             <h1 className="font-display font-black text-3xl sm:text-4xl text-ink tracking-tight">
               Latihan Mandiri: <span className="highlight">Huruf {currentAlphabet.letter}</span>
             </h1>
@@ -231,7 +223,7 @@ export const PracticePage = ({ modelHook }) => {
                       {currentAlphabet.letter}
                     </span>
                     <span className="font-mono text-xs font-bold uppercase text-ink/60">
-                      {currentAlphabet.gestureType === "dynamic" ? "💫 Gerak Dinamis" : "✋ Gestur Statis"}
+                      {currentAlphabet.gestureType === "dynamic" ? "Gerak Dinamis" : "Gestur Statis"}
                     </span>
                   </div>
                 </div>

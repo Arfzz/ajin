@@ -185,21 +185,15 @@ export const AiCompanionPage = ({ modelHook }) => {
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <div className="flex flex-wrap items-center gap-2 mb-2">
-              <span className="sticker sticker-cobalt px-2.5 py-0.5 text-xs font-mono uppercase rotated-label">
-                🤖 Didukung Gemini AI
-              </span>
-              <span className="sticker sticker-yellow px-2.5 py-0.5 text-xs font-mono uppercase">
-                ⚡ Interpretasi Isyarat Real-Time
-              </span>
               {/* Status badge AI */}
               {aiAvailable === true && (
-                <span className="sticker sticker-mint px-2.5 py-0.5 text-xs font-mono uppercase flex items-center gap-1">
+                <span className="tag tag-mint text-xs font-mono uppercase flex items-center gap-1 font-bold">
                   <span className="w-1.5 h-1.5 rounded-full bg-ink inline-block" />
                   AI Aktif
                 </span>
               )}
               {aiAvailable === false && (
-                <span className="sticker sticker-coral px-2.5 py-0.5 text-xs font-mono uppercase flex items-center gap-1">
+                <span className="tag tag-coral text-xs font-mono uppercase flex items-center gap-1 font-bold">
                   <AlertTriangle className="w-3 h-3" /> AI Nonaktif
                 </span>
               )}
@@ -285,7 +279,7 @@ export const AiCompanionPage = ({ modelHook }) => {
                   </p>
                 ) : (
                   <div className="p-4 bg-paper-2 border-2 border-dashed border-ink/30 text-ink/50 text-sm font-sans font-medium">
-                    👋 Belum ada isyarat. Arahkan tangan ke kamera di kanan, tahan gestur 1,5 detik untuk mengetik huruf.
+                    Belum ada isyarat. Arahkan tangan ke kamera di kanan, tahan gestur 1 detik untuk mengetik huruf.
                   </div>
                 )}
               </div>
@@ -544,7 +538,7 @@ export const AiCompanionPage = ({ modelHook }) => {
 
             {/* Pintasan keyboard */}
             <div className="p-3 bg-paper-2 border border-ink/20 text-[11px] font-mono text-ink/60 flex flex-wrap items-center justify-between gap-2">
-              <span>⌨️ Space = Spasi • Backspace = Hapus • Enter = Suarakan</span>
+              <span>Space: Spasi • Backspace: Hapus • Enter: Suarakan</span>
               <span className="tag tag-mint text-[9px]">id-ID TTS</span>
             </div>
           </div>

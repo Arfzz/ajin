@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Search, Camera, X, Sparkles, Hand, Compass, ArrowUpRight, CheckCircle2 } from "lucide-react";
+import { Search, Camera, X, Sparkles, Hand, Compass, ArrowUpRight, CheckCircle2, Lightbulb } from "lucide-react";
 
 import { GuidePlayer } from "../components/remotion/GuidePlayer";
 import { SIBI_ALPHABETS_FALLBACK } from "../services/fallbackData";
@@ -32,10 +32,10 @@ const cardVariants = {
 
 const FILTERS = [
   { key: "all", label: "Semua Huruf", count: 26, color: "btn-ink" },
-  { key: "static", label: "✋ Gestur Statis", count: 24, color: "btn-cobalt" },
-  { key: "dynamic", label: "💫 Gerak Dinamis (J & Z)", count: 2, color: "btn-yellow" },
-  { key: "attention", label: "👀 Mirip & Rawan Tertukar", count: 7, color: "btn-coral" },
-  { key: "vowels", label: "🔤 Huruf Vokal (A-I-U-E-O)", count: 5, color: "btn-mint" },
+  { key: "static", label: "Gestur Statis", count: 24, color: "btn-cobalt" },
+  { key: "dynamic", label: "Gerak Dinamis (J & Z)", count: 2, color: "btn-yellow" },
+  { key: "attention", label: "Mirip & Rawan Tertukar", count: 7, color: "btn-coral" },
+  { key: "vowels", label: "Huruf Vokal (A-I-U-E-O)", count: 5, color: "btn-mint" },
 ];
 
 const ATTENTION_LETTERS = ["K", "Y", "V", "P", "M", "N", "S"];
@@ -91,19 +91,6 @@ export const DictionaryPage = () => {
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
-              {/* Fun Neobrutalism Badges */}
-              <div className="flex flex-wrap items-center gap-2 mb-3">
-                <span className="sticker sticker-yellow px-3 py-1 text-xs uppercase rotated-label font-mono">
-                  🔥 26 Huruf Lengkap
-                </span>
-                <span className="sticker sticker-coral px-3 py-1 text-xs uppercase font-mono">
-                  ⚡ Siap Kamera
-                </span>
-                <span className="sticker sticker-cobalt px-3 py-1 text-xs uppercase rotated-label-2 font-mono">
-                  🎯 SIBI Standar
-                </span>
-              </div>
-
               <h1 className="font-display font-black text-4xl sm:text-5xl lg:text-6xl text-ink tracking-tight leading-[1.05]">
                 Kamus Isyarat <span className="highlight">A sampai Z</span>
               </h1>
@@ -215,7 +202,7 @@ export const DictionaryPage = () => {
                           : "tag-coral"
                       }`}
                     >
-                      {item.difficulty === "easy" ? "★ Mudah" : item.difficulty === "medium" ? "★★ Sedang" : "★★★ Sulit"}
+                      {item.difficulty === "easy" ? "Mudah" : item.difficulty === "medium" ? "Sedang" : "Sulit"}
                     </span>
                   </div>
 
@@ -239,7 +226,7 @@ export const DictionaryPage = () => {
                       )}
                       {needsAttention && (
                         <span className="tag tag-coral text-[9px]">
-                          ⚠️ Rawan Salah
+                          Rawan Salah
                         </span>
                       )}
                       {isDynamic && (
@@ -262,7 +249,7 @@ export const DictionaryPage = () => {
                       className="btn bg-paper-2 hover:bg-paper-3 text-ink text-xs font-mono py-2 px-2"
                       aria-label={`Buka panduan huruf ${item.letter}`}
                     >
-                      Lihat Bentuk 📖
+                      Lihat Bentuk
                     </button>
                     <Link
                       to={`/latihan?letter=${item.letter}`}
@@ -377,7 +364,7 @@ export const DictionaryPage = () => {
               {/* Pro Tips / Warning */}
               {selectedAlphabet.tips && (
                 <div className="p-4 bg-yellow/20 border-[2px] border-ink flex items-start gap-3">
-                  <span className="text-xl">💡</span>
+                  <Lightbulb className="w-5 h-5 text-coral shrink-0 mt-0.5" />
                   <div>
                     <h5 className="font-mono text-xs font-bold uppercase text-ink mb-1">
                       Tips Orientasi &amp; Supaya Tidak Tertukar:

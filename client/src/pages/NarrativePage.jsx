@@ -165,14 +165,6 @@ export const NarrativePage = ({ modelHook }) => {
       <div className="border-b-[3px] border-ink bg-paper-2 py-8 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <div className="flex flex-wrap items-center gap-2 mb-2">
-              <span className="sticker sticker-cobalt px-2.5 py-0.5 text-xs font-mono uppercase rotated-label">
-                🗣️ Jembatan Isyarat ke Suara
-              </span>
-              <span className="sticker sticker-yellow px-2.5 py-0.5 text-xs font-mono uppercase">
-                ⚡ Sintesis Audio Bahasa Indonesia
-              </span>
-            </div>
             <h1 className="font-display font-black text-3xl sm:text-4xl text-ink tracking-tight">
               Studio Narasi: <span className="highlight">Rangkai Kalimat</span>
             </h1>
@@ -225,8 +217,8 @@ export const NarrativePage = ({ modelHook }) => {
                     </p>
                   ) : (
                     <div className="p-4 bg-paper-2 border-2 border-dashed border-ink/30 text-ink/50 text-sm font-sans font-medium">
-                      👋 Belum ada teks. Arahkan isyarat tanganmu ke kamera di sebelah kanan.
-                      Tahan gestur selama 1,5 detik untuk mengetikkan huruf ke papan ini.
+                      Belum ada teks. Arahkan isyarat tanganmu ke kamera di sebelah kanan.
+                      Tahan gestur selama 1 detik untuk mengetikkan huruf ke papan ini.
                     </div>
                   )}
                 </div>
@@ -322,7 +314,7 @@ export const NarrativePage = ({ modelHook }) => {
             />
 
             <div className="p-3 bg-paper-2 border border-ink text-xs font-mono text-ink/70 flex items-center justify-between">
-              <span>Status Suara: {isSpeaking ? "🔊 Membaca Kalimat..." : "Siap Bersuara"}</span>
+              <span>Status Suara: {isSpeaking ? "Membaca Kalimat..." : "Siap Bersuara"}</span>
               <span className="tag tag-mint text-[10px]">Sintesis Suara id-ID</span>
             </div>
           </div>
