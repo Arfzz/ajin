@@ -68,7 +68,48 @@ export const logTelemetry = async (req, res) => {
 
 export const getTelemetrySummary = async (req, res) => {
   try {
-    const logs = telemetryLogs;
+    const { userId } = req.query;
+
+    let logs = [...telemetryLogs];
+    if (userId && userId !== "all") {
+      logs = logs.filter((l) => l.userId === userId);
+    }
+
+    // Jika Supabase aktif dan user bukan guest, ambil juga dari database
+    if (isSupabaseConfigured && supabase && userId && userId !== "guest-user" && !userId.startsWith("guest_")) {
+      try {
+        const { data: dbLogs } = await supabase
+          .from("session_telemetries")
+          .select("*")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(500);
+
+        if (dbLogs && dbLogs.length > 0) {
+          const mappedDbLogs = dbLogs.map((d) => ({
+            id: d.id,
+            userId: d.user_id,
+            sessionType: d.session_type,
+            targetLabel: d.target_label,
+            predictedLabel: d.predicted_label,
+            confidence: Number(d.confidence || 0),
+            latencyMs: Number(d.latency_ms || 0),
+            fps: Number(d.fps || 0),
+            isSuccess: Boolean(d.is_success),
+            createdAt: d.created_at
+          }));
+
+          const existingIds = new Set(logs.map((l) => l.id));
+          for (const dbEntry of mappedDbLogs) {
+            if (!existingIds.has(dbEntry.id)) {
+              logs.push(dbEntry);
+            }
+          }
+        }
+      } catch (dbErr) {
+        console.warn("[AJIN Telemetry] Gagal memuat telemetri dari Supabase:", dbErr.message);
+      }
+    }
 
     if (logs.length === 0) {
       return res.json({
@@ -79,7 +120,7 @@ export const getTelemetrySummary = async (req, res) => {
           avgFps: 0,
           avgConfidence: 0,
           successRate: 0,
-          classMetrics: {}
+          classMetrics: []
         },
         recentLogs: []
       });

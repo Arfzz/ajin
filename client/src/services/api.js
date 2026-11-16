@@ -26,9 +26,29 @@ export const fetchAlphabets = async () => {
   }
 };
 
+// Helper untuk mendapatkan identitas user aktif atau session tamu unik
+export const getCurrentUserIdentifier = () => {
+  try {
+    const raw = localStorage.getItem("ajin_user");
+    if (raw) {
+      const u = JSON.parse(raw);
+      if (u.id || u.sub || u.email) return u.id || u.sub || u.email;
+    }
+    let guestId = sessionStorage.getItem("ajin_session_id");
+    if (!guestId) {
+      guestId = "guest_" + Math.random().toString(36).slice(2, 10);
+      sessionStorage.setItem("ajin_session_id", guestId);
+    }
+    return guestId;
+  } catch {
+    return "guest-user";
+  }
+};
+
 export const saveProgress = async (payload) => {
   try {
-    const res = await api.post("/progress/update", payload);
+    const userId = payload.userId || getCurrentUserIdentifier();
+    const res = await api.post("/progress/update", { ...payload, userId });
     return res.data;
   } catch (err) {
     console.warn("[AJIN API] Gagal menyimpan ke server, menyimpan di cache lokal.");
@@ -38,7 +58,8 @@ export const saveProgress = async (payload) => {
 
 export const sendTelemetry = async (payload) => {
   try {
-    const res = await api.post("/telemetry", payload);
+    const userId = payload.userId || getCurrentUserIdentifier();
+    const res = await api.post("/telemetry", { ...payload, userId });
     return res.data;
   } catch (err) {
     return { success: false, error: err.message };
@@ -85,29 +106,41 @@ export const fetchAiQuizWords = async (category = "umum", difficulty = "easy", c
   }
 };
 
-export const fetchTelemetrySummary = async () => {
+export const fetchTelemetrySummary = async (userId) => {
   try {
-    const res = await api.get("/telemetry/summary");
-    return res.data;
-  } catch (err) {
+    const targetUserId = userId || getCurrentUserIdentifier();
+    const res = await api.get("/telemetry/summary", {
+      params: { userId: targetUserId },
+    });
+    if (res.data && res.data.summary) {
+      if (!Array.isArray(res.data.summary.classMetrics)) {
+        res.data.summary.classMetrics = [];
+      }
+      return res.data;
+    }
     return {
       success: true,
       summary: {
-        totalFrames: 142,
-        avgLatencyMs: 32.4,
-        avgFps: 28.5,
-        avgConfidence: 89.2,
-        successRate: 94.6,
-        classMetrics: [
-          { letter: "A", testsCount: 18, accuracyPct: 94.4, avgConfidencePct: 91.2 },
-          { letter: "B", testsCount: 14, accuracyPct: 92.8, avgConfidencePct: 88.5 },
-          { letter: "C", testsCount: 16, accuracyPct: 96.0, avgConfidencePct: 93.1 },
-          { letter: "D", testsCount: 12, accuracyPct: 91.6, avgConfidencePct: 87.4 },
-          { letter: "E", testsCount: 10, accuracyPct: 89.0, avgConfidencePct: 85.0 },
-          { letter: "J", testsCount: 15, accuracyPct: 86.6, avgConfidencePct: 82.5 },
-          { letter: "K", testsCount: 14, accuracyPct: 88.0, avgConfidencePct: 84.1 },
-          { letter: "Z", testsCount: 12, accuracyPct: 85.0, avgConfidencePct: 80.2 },
-        ],
+        totalFrames: 0,
+        avgLatencyMs: 0,
+        avgFps: 0,
+        avgConfidence: 0,
+        successRate: 0,
+        classMetrics: [],
+      },
+      recentLogs: [],
+    };
+  } catch (err) {
+    console.warn("[AJIN API] Server telemetri tidak merespons, memuat data sesi kosong.");
+    return {
+      success: true,
+      summary: {
+        totalFrames: 0,
+        avgLatencyMs: 0,
+        avgFps: 0,
+        avgConfidence: 0,
+        successRate: 0,
+        classMetrics: [],
       },
       recentLogs: [],
     };
