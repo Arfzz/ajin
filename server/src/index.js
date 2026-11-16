@@ -1,16 +1,22 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// Pastikan selalu memuat server/.env meskipun server dijalankan dari folder root ajin
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
+dotenv.config();
 
 import authRoutes from "./routes/authRoutes.js";
 import alphabetRoutes from "./routes/alphabetRoutes.js";
 import progressRoutes from "./routes/progressRoutes.js";
 import telemetryRoutes from "./routes/telemetryRoutes.js";
-
-dotenv.config();
+import aiRoutes from "./routes/aiRoutes.js";
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // Middleware
 app.use(cors());
@@ -37,6 +43,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/alphabets", alphabetRoutes);
 app.use("/api/progress", progressRoutes);
 app.use("/api/telemetry", telemetryRoutes);
+app.use("/api/ai", aiRoutes);
 
 // Global Error Handler
 app.use((err, req, res, next) => {

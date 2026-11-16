@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -45,6 +45,46 @@ export const sendTelemetry = async (payload) => {
   }
 };
 
+export const interpretSigns = async (letters, contextHint = "") => {
+  try {
+    const res = await api.post("/ai/interpret", { letters, contextHint });
+    return res.data;
+  } catch (err) {
+    return { success: false, message: err.response?.data?.message || "Server AI tidak merespons." };
+  }
+};
+
+export const expandTextVariations = async (text, mode = "casual") => {
+  try {
+    const res = await api.post("/ai/expand", { text, mode });
+    return res.data;
+  } catch (err) {
+    return { success: false, message: err.response?.data?.message || "Gagal mengekspansi teks." };
+  }
+};
+
+export const checkAiStatus = async () => {
+  try {
+    const res = await api.get("/ai/status");
+    return res.data;
+  } catch (err) {
+    return { success: false, available: false, reason: "Server tidak dapat dijangkau." };
+  }
+};
+
+export const fetchAiQuizWords = async (category = "umum", difficulty = "easy", count = 5) => {
+  try {
+    const res = await api.post("/ai/quiz-words", { category, difficulty, count });
+    return res.data;
+  } catch (err) {
+    return {
+      success: true,
+      words: ["BUKU", "SAYA", "KITA", "AJIN", "BAIK"],
+      isAiGenerated: false,
+    };
+  }
+};
+
 export const fetchTelemetrySummary = async () => {
   try {
     const res = await api.get("/telemetry/summary");
@@ -66,10 +106,10 @@ export const fetchTelemetrySummary = async () => {
           { letter: "E", testsCount: 10, accuracyPct: 89.0, avgConfidencePct: 85.0 },
           { letter: "J", testsCount: 15, accuracyPct: 86.6, avgConfidencePct: 82.5 },
           { letter: "K", testsCount: 14, accuracyPct: 88.0, avgConfidencePct: 84.1 },
-          { letter: "Z", testsCount: 12, accuracyPct: 85.0, avgConfidencePct: 80.2 }
-        ]
+          { letter: "Z", testsCount: 12, accuracyPct: 85.0, avgConfidencePct: 80.2 },
+        ],
       },
-      recentLogs: []
+      recentLogs: [],
     };
   }
 };

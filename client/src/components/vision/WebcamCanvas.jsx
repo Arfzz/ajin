@@ -1,6 +1,26 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 import { Camera, CameraOff, RefreshCw, Layers, Sliders, CheckCircle2 } from "lucide-react";
 
+// Koneksi 21 titik sendi tangan
+const HAND_CONNECTIONS = [
+  [0, 1], [1, 2], [2, 3], [3, 4],         // Ibu jari
+  [0, 5], [5, 6], [6, 7], [7, 8],         // Telunjuk
+  [5, 9], [9, 10], [10, 11], [11, 12],    // Jari tengah
+  [9, 13], [13, 14], [14, 15], [15, 16],  // Jari manis
+  [13, 17], [0, 17], [17, 18], [18, 19], [19, 20], // Kelingking
+];
+
+const FINGER_RGB = {
+  0: "rgb(255, 255, 255)",
+  1: "rgb(255, 0, 0)",
+  2: "rgb(255, 165, 0)",
+  3: "rgb(255, 255, 0)",
+  4: "rgb(0, 255, 0)",
+  5: "rgb(0, 0, 255)",
+};
+
+const getFingerIndex = (i) => (i === 0 ? 0 : Math.floor((i - 1) / 4) + 1);
+
 export const WebcamCanvas = ({
   modelHook,
   onLetterLocked,
@@ -8,6 +28,7 @@ export const WebcamCanvas = ({
   showControls = true,
 }) => {
   const videoRef = useRef(null);
+  const overlayCanvasRef = useRef(null);
   const containerRef = useRef(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState(null);
@@ -21,12 +42,21 @@ export const WebcamCanvas = ({
     simulatedLetter,
     setSimulatedLetter,
     consumeLockedLetter,
-    channelMode,
-    setChannelMode,
     useRoiCrop,
     setUseRoiCrop,
     labels,
   } = modelHook;
+
+  // Handler saat video siap dimainkan
+  const handleVideoReady = useCallback(async () => {
+    if (!videoRef.current) return;
+    try {
+      await videoRef.current.play();
+    } catch (e) {
+      console.warn("[AJIN Camera] Autoplay dicegah / video play tertunda:", e.message);
+    }
+    setCameraActive(true);
+  }, []);
 
   // Mulai aliran video webcam
   const startCamera = useCallback(async () => {
@@ -34,6 +64,12 @@ export const WebcamCanvas = ({
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error("Perangkat atau peramban tidak mendukung akses webcam.");
+      }
+
+      // Hentikan track lama jika masih berjalan
+      if (videoRef.current && videoRef.current.srcObject) {
+        const tracks = videoRef.current.srcObject.getTracks();
+        tracks.forEach((track) => track.stop());
       }
 
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -47,17 +83,20 @@ export const WebcamCanvas = ({
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.onloadedmetadata = () => {
-          videoRef.current.play();
-          setCameraActive(true);
-        };
+        videoRef.current.onloadedmetadata = handleVideoReady;
+        videoRef.current.onloadeddata = handleVideoReady;
+        videoRef.current.oncanplay = handleVideoReady;
+
+        if (videoRef.current.readyState >= 1) {
+          handleVideoReady();
+        }
       }
     } catch (err) {
       console.warn("[AJIN Camera] Akses kamera tidak dapat diaktifkan:", err.message);
       setCameraError(err.message || "Gagal membuka webcam.");
       setCameraActive(false);
     }
-  }, []);
+  }, [handleVideoReady]);
 
   // Hentikan webcam
   const stopCamera = useCallback(() => {
@@ -87,25 +126,22 @@ export const WebcamCanvas = ({
     const runInferenceLoop = async () => {
       if (!isRunning) return;
 
-      if (videoRef.current && cameraActive && videoRef.current.readyState >= 2) {
-        // Tentukan kotak ROI di tengah video (260x260 px)
-        const vw = videoRef.current.videoWidth || 640;
-        const vh = videoRef.current.videoHeight || 480;
-        const roiSize = Math.min(260, Math.min(vw, vh) * 0.7);
-        const roiBox = {
-          x: (vw - roiSize) / 2,
-          y: (vh - roiSize) / 2,
-          width: roiSize,
-          height: roiSize,
-        };
-
-        await predictFrame(videoRef.current, roiBox);
+      if (
+        videoRef.current &&
+        cameraActive &&
+        videoRef.current.readyState >= 2 &&
+        videoRef.current.videoWidth > 0 &&
+        videoRef.current.videoHeight > 0
+      ) {
+        await predictFrame(videoRef.current);
       } else if (isSimulationMode) {
         // Tetap jalankan loop telemetri simulasi jika webcam mati
-        await predictFrame(null, null);
+        await predictFrame(null);
       }
 
-      animFrameIdRef.current = requestAnimationFrame(runInferenceLoop);
+      if (isRunning) {
+        animFrameIdRef.current = requestAnimationFrame(runInferenceLoop);
+      }
     };
 
     animFrameIdRef.current = requestAnimationFrame(runInferenceLoop);
@@ -128,6 +164,53 @@ export const WebcamCanvas = ({
     }
   }, [telemetry.isLocked, telemetry.predictedLetter, onLetterLocked, consumeLockedLetter]);
 
+  // Gambar visualisasi 21 landmark MediaPipe di atas video
+  useEffect(() => {
+    const canvas = overlayCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (!telemetry.landmarks || telemetry.landmarks.length === 0 || !cameraActive) return;
+
+    // Sinkronkan resolusi canvas dengan video aktual jika tersedia
+    if (videoRef.current && videoRef.current.videoWidth > 0) {
+      if (canvas.width !== videoRef.current.videoWidth || canvas.height !== videoRef.current.videoHeight) {
+        canvas.width = videoRef.current.videoWidth;
+        canvas.height = videoRef.current.videoHeight;
+      }
+    }
+
+    const w = canvas.width;
+    const h = canvas.height;
+    const pts = telemetry.landmarks.map((p) => ({
+      x: isMirrored ? (1 - p.x) * w : p.x * w,
+      y: p.y * h,
+    }));
+
+    // Gambar garis tulang
+    ctx.lineWidth = 3;
+    ctx.lineCap = "round";
+    for (const [a, b] of HAND_CONNECTIONS) {
+      ctx.strokeStyle = FINGER_RGB[getFingerIndex(b)];
+      ctx.beginPath();
+      ctx.moveTo(pts[a].x, pts[a].y);
+      ctx.lineTo(pts[b].x, pts[b].y);
+      ctx.stroke();
+    }
+
+    // Gambar titik sendi
+    for (let i = 0; i < pts.length; i++) {
+      ctx.fillStyle = FINGER_RGB[getFingerIndex(i)];
+      ctx.beginPath();
+      ctx.arc(pts[i].x, pts[i].y, 4, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.strokeStyle = "#111111";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+  }, [telemetry.landmarks, cameraActive, isMirrored]);
+
   return (
     <div
       ref={containerRef}
@@ -141,10 +224,21 @@ export const WebcamCanvas = ({
           autoPlay
           playsInline
           muted
+          onLoadedMetadata={handleVideoReady}
+          onLoadedData={handleVideoReady}
+          onCanPlay={handleVideoReady}
           className={`w-full h-full object-cover transition-transform ${
             isMirrored ? "-scale-x-100" : ""
-          } ${!cameraActive ? "hidden" : "block"} ${
-            channelMode === "grayscale" ? "grayscale contrast-125" : ""
+          } ${!cameraActive ? "hidden" : "block"}`}
+        />
+
+        {/* Landmark Overlay Canvas */}
+        <canvas
+          ref={overlayCanvasRef}
+          width={640}
+          height={480}
+          className={`absolute inset-0 w-full h-full object-cover pointer-events-none z-10 ${
+            !cameraActive ? "hidden" : "block"
           }`}
         />
 
@@ -274,17 +368,9 @@ export const WebcamCanvas = ({
               Cermin: {isMirrored ? "AKTIF" : "NONAKTIF"}
             </button>
 
-            <button
-              onClick={() =>
-                setChannelMode(channelMode === "rgb" ? "grayscale" : "rgb")
-              }
-              className={`btn text-[11px] font-mono py-1.5 px-3 ${
-                channelMode === "grayscale" ? "btn-yellow" : "bg-paper-2 hover:bg-paper-3"
-              }`}
-              title="Sesuaikan channel warna dengan dataset latih"
-            >
-              Warna: {channelMode.toUpperCase()}
-            </button>
+            <span className="tag tag-mint text-[11px] font-mono py-1 px-2.5">
+              21 Keypoints SIBI
+            </span>
 
             <button
               onClick={() => setUseRoiCrop(!useRoiCrop)}

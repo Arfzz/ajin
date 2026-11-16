@@ -1,17 +1,43 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import confetti from "canvas-confetti";
-import { Award, Timer, RotateCcw, CheckCircle2, Flame, HelpCircle, ArrowRight, Zap, Trophy } from "lucide-react";
+import {
+  Award, Timer, RotateCcw, CheckCircle2, Flame, HelpCircle,
+  Trophy, Sparkles, Loader2, Sliders, RefreshCw, Layers
+} from "lucide-react";
 
 import { WebcamCanvas } from "../components/vision/WebcamCanvas";
 import { TelemetryBar } from "../components/vision/TelemetryBar";
 import { GuidePlayer } from "../components/remotion/GuidePlayer";
-import { sendTelemetry } from "../services/api";
+import { sendTelemetry, fetchAiQuizWords } from "../services/api";
 import { SIBI_ALPHABETS_FALLBACK } from "../services/fallbackData";
 
-const QUIZ_WORDS = ["BUKU", "SAYA", "KITA", "AJIN", "BAIK", "HARI"];
+const DEFAULT_QUIZ_WORDS = ["BUKU", "SAYA", "KITA", "AJIN", "BAIK"];
+
+const CATEGORIES = [
+  { id: "umum", label: "Umum", icon: "🌐" },
+  { id: "hewan", label: "Hewan", icon: "🐾" },
+  { id: "makanan", label: "Makanan", icon: "🍎" },
+  { id: "benda", label: "Benda", icon: "📦" },
+  { id: "alam", label: "Alam", icon: "🌿" },
+  { id: "keluarga", label: "Keluarga", icon: "👨‍👩‍👧" },
+];
+
+const DIFFICULTIES = [
+  { id: "easy", label: "Mudah", desc: "3-4 Huruf" },
+  { id: "medium", label: "Sedang", desc: "5-6 Huruf" },
+  { id: "hard", label: "Tantangan", desc: "7+ Huruf" },
+];
 
 export const QuizPage = ({ modelHook }) => {
+  // State Bank Kata Kuis
+  const [quizWords, setQuizWords] = useState(DEFAULT_QUIZ_WORDS);
+  const [selectedCategory, setSelectedCategory] = useState("umum");
+  const [selectedDifficulty, setSelectedDifficulty] = useState("easy");
+  const [isLoadingWords, setIsLoadingWords] = useState(false);
+  const [isAiGenerated, setIsAiGenerated] = useState(false);
+
+  // State Progres Permainan
   const [wordIndex, setWordIndex] = useState(0);
   const [letterIndex, setLetterIndex] = useState(0);
   const [score, setScore] = useState(0);
@@ -20,8 +46,8 @@ export const QuizPage = ({ modelHook }) => {
   const [isCompleted, setIsCompleted] = useState(false);
   const [showHint, setShowHint] = useState(false);
 
-  const currentWord = QUIZ_WORDS[wordIndex];
-  const targetLetter = currentWord[letterIndex];
+  const currentWord = quizWords[wordIndex] || "BUKU";
+  const targetLetter = currentWord[letterIndex] || currentWord[0];
 
   // Ambil panduan huruf saat ini untuk hint drawer
   const targetAlphabetInfo = SIBI_ALPHABETS_FALLBACK.find(
@@ -36,6 +62,23 @@ export const QuizPage = ({ modelHook }) => {
     }, 1000);
     return () => clearInterval(interval);
   }, [isCompleted]);
+
+  // Fungsi muat kata baru dari Gemini AI
+  const handleGenerateNewWords = async (category = selectedCategory, difficulty = selectedDifficulty) => {
+    setIsLoadingWords(true);
+    const result = await fetchAiQuizWords(category, difficulty, 5);
+    setIsLoadingWords(false);
+
+    if (result && Array.isArray(result.words) && result.words.length > 0) {
+      setQuizWords(result.words);
+      setIsAiGenerated(result.isAiGenerated !== false);
+      setWordIndex(0);
+      setLetterIndex(0);
+      setIsCompleted(false);
+      setShowHint(false);
+      setTimerSeconds(0);
+    }
+  };
 
   // Tangani huruf yang terkunci dari kamera
   const handleLetterLocked = useCallback(
@@ -72,7 +115,7 @@ export const QuizPage = ({ modelHook }) => {
           });
 
           // Pindah ke kata berikutnya jika masih ada
-          if (wordIndex < QUIZ_WORDS.length - 1) {
+          if (wordIndex < quizWords.length - 1) {
             setWordIndex((prev) => prev + 1);
             setLetterIndex(0);
           } else {
@@ -84,7 +127,7 @@ export const QuizPage = ({ modelHook }) => {
         setStreak(0);
       }
     },
-    [isCompleted, targetLetter, letterIndex, currentWord.length, wordIndex, modelHook.telemetry]
+    [isCompleted, targetLetter, letterIndex, currentWord.length, wordIndex, quizWords.length, modelHook.telemetry]
   );
 
   const handleRestart = () => {
@@ -116,6 +159,16 @@ export const QuizPage = ({ modelHook }) => {
               <span className="sticker sticker-yellow px-2.5 py-0.5 text-xs font-mono uppercase">
                 ⚡ Eja Kosakata SIBI
               </span>
+              {isAiGenerated ? (
+                <span className="sticker sticker-cobalt px-2.5 py-0.5 text-xs font-mono uppercase flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-yellow" />
+                  Gemini AI
+                </span>
+              ) : (
+                <span className="sticker sticker-mint px-2.5 py-0.5 text-xs font-mono uppercase">
+                  Bank Kata Standar
+                </span>
+              )}
             </div>
             <h1 className="font-display font-black text-3xl sm:text-4xl text-ink tracking-tight">
               Arena Kuis: <span className="highlight">Eja Kata SIBI</span>
@@ -153,16 +206,82 @@ export const QuizPage = ({ modelHook }) => {
           </div>
         </div>
 
+        {/* Panel Kontrol Generator AI Kuis */}
+        <div className="max-w-7xl mx-auto mt-6 pt-4 border-t-2 border-ink/15 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-3 text-xs font-mono">
+            {/* Pilihan Tema */}
+            <div className="flex items-center gap-1.5">
+              <span className="font-bold text-ink/60 uppercase text-[10px]">Tema:</span>
+              <div className="flex flex-wrap gap-1">
+                {CATEGORIES.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => {
+                      setSelectedCategory(cat.id);
+                      handleGenerateNewWords(cat.id, selectedDifficulty);
+                    }}
+                    className={`btn text-[10px] font-mono py-1 px-2 ${
+                      selectedCategory === cat.id
+                        ? "btn-cobalt"
+                        : "bg-paper hover:bg-paper-3"
+                    }`}
+                  >
+                    <span>{cat.icon} {cat.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Pilihan Kesulitan */}
+            <div className="flex items-center gap-1.5 ml-0 sm:ml-2">
+              <span className="font-bold text-ink/60 uppercase text-[10px]">Tingkat:</span>
+              <div className="flex gap-1">
+                {DIFFICULTIES.map((diff) => (
+                  <button
+                    key={diff.id}
+                    onClick={() => {
+                      setSelectedDifficulty(diff.id);
+                      handleGenerateNewWords(selectedCategory, diff.id);
+                    }}
+                    title={diff.desc}
+                    className={`btn text-[10px] font-mono py-1 px-2.5 ${
+                      selectedDifficulty === diff.id
+                        ? "btn-yellow font-black"
+                        : "bg-paper hover:bg-paper-3"
+                    }`}
+                  >
+                    {diff.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Tombol Buat Kata Baru dengan AI */}
+          <button
+            onClick={() => handleGenerateNewWords(selectedCategory, selectedDifficulty)}
+            disabled={isLoadingWords}
+            className="btn btn-yellow text-xs font-mono py-1.5 px-3 flex items-center gap-2 shadow-[2px_2px_0_#111] disabled:opacity-50"
+          >
+            {isLoadingWords ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="w-3.5 h-3.5 text-cobalt" />
+            )}
+            <span>{isLoadingWords ? "Membuat Kata..." : "Acak Kata AI"}</span>
+          </button>
+        </div>
+
         {/* Level Progression Progress Bar */}
-        <div className="max-w-7xl mx-auto mt-6 pt-4 border-t-2 border-ink/15">
+        <div className="max-w-7xl mx-auto mt-4 pt-3 border-t border-ink/10">
           <div className="flex items-center justify-between text-xs font-mono font-bold uppercase mb-2">
-            <span>Kata {wordIndex + 1} dari {QUIZ_WORDS.length}</span>
-            <span>{Math.round(((wordIndex) / QUIZ_WORDS.length) * 100)}% Selesai</span>
+            <span>Kata {wordIndex + 1} dari {quizWords.length}</span>
+            <span>{Math.round((wordIndex / quizWords.length) * 100)}% Selesai</span>
           </div>
           <div className="w-full h-4 border-2 border-ink bg-paper p-0.5 shadow-[2px_2px_0_#111]">
             <div
               className="h-full bg-yellow transition-all duration-300 border border-ink"
-              style={{ width: `${((wordIndex + (letterIndex / currentWord.length)) / QUIZ_WORDS.length) * 100}%` }}
+              style={{ width: `${((wordIndex + (letterIndex / currentWord.length)) / quizWords.length) * 100}%` }}
             />
           </div>
         </div>
@@ -176,9 +295,16 @@ export const QuizPage = ({ modelHook }) => {
             {!isCompleted ? (
               <div className="card p-6 bg-paper relative nb-thick">
                 <div className="flex items-center justify-between mb-4 border-b-2 border-ink pb-3">
-                  <span className="tag tag-yellow text-[10px]">
-                    TANTANGAN #{wordIndex + 1}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="tag tag-yellow text-[10px]">
+                      TANTANGAN #{wordIndex + 1}
+                    </span>
+                    {isAiGenerated && (
+                      <span className="tag tag-cobalt text-[9px] flex items-center gap-1">
+                        <Sparkles className="w-2.5 h-2.5" /> AI
+                      </span>
+                    )}
+                  </div>
                   <span className="font-mono text-xs font-bold text-coral">
                     Huruf Target: [{targetLetter}]
                   </span>
@@ -278,7 +404,7 @@ export const QuizPage = ({ modelHook }) => {
                   Selamat, Tantangan Eja Berhasil!
                 </h3>
                 <p className="font-sans text-xs text-ink/70 font-medium max-w-sm mx-auto mb-6">
-                  Kamu telah menyelesaikan seluruh {QUIZ_WORDS.length} kata tantangan SIBI dalam waktu {formatTimer(timerSeconds)}.
+                  Kamu telah menyelesaikan seluruh {quizWords.length} kata tantangan SIBI dalam waktu {formatTimer(timerSeconds)}.
                 </p>
 
                 <div className="grid grid-cols-2 gap-3 mb-6 font-mono text-left">
@@ -294,17 +420,27 @@ export const QuizPage = ({ modelHook }) => {
 
                 <div className="flex flex-col sm:flex-row items-center gap-3 justify-center">
                   <button
-                    onClick={handleRestart}
+                    onClick={() => handleGenerateNewWords(selectedCategory, selectedDifficulty)}
+                    disabled={isLoadingWords}
                     className="btn btn-yellow w-full sm:w-auto text-xs font-mono py-3 px-6 flex items-center justify-center gap-2 shadow-[4px_4px_0_#111]"
                   >
-                    <RotateCcw className="w-4 h-4" />
-                    Ulangi Tantangan
+                    <Sparkles className="w-4 h-4 text-cobalt" />
+                    <span>Tantangan AI Baru</span>
                   </button>
+
+                  <button
+                    onClick={handleRestart}
+                    className="btn bg-paper-2 hover:bg-paper-3 w-full sm:w-auto text-xs font-mono py-3 px-6 flex items-center justify-center gap-2"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    Ulangi Kata Ini
+                  </button>
+
                   <Link
                     to="/latihan"
                     className="btn bg-paper hover:bg-paper-3 w-full sm:w-auto text-xs font-mono py-3 px-6 text-center"
                   >
-                    Lanjut ke Studio Latihan →
+                    Studio Latihan →
                   </Link>
                 </div>
               </div>

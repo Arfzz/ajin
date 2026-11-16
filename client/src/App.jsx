@@ -6,19 +6,18 @@ import { useSibiModel } from "./hooks/useSibiModel";
 import { HomePage } from "./pages/HomePage";
 import { DictionaryPage } from "./pages/DictionaryPage";
 import { PracticePage } from "./pages/PracticePage";
-import { NarrativePage } from "./pages/NarrativePage";
+import { AiCompanionPage } from "./pages/AiCompanionPage";
 import { QuizPage } from "./pages/QuizPage";
 import { AnalyticsPage } from "./pages/AnalyticsPage";
 import { CustomCursor } from "./components/creative/CustomCursor";
 
 export function App() {
-  // Model hook terpusat untuk efisiensi WebGL & cache memori
+  // Model hook terpusat: MediaPipe HandLandmarker + EfficientNet-B0 ONNX
   const modelHook = useSibiModel({
-    modelPath: "/model/model.json",
+    modelPath: "/model/effnet_b0_sibi.onnx",
+    handLandmarkerPath: "/model/hand_landmarker.task",
     labelsPath: "/model/labels.json",
-    imgSize: 150,
-    defaultChannelMode: "grayscale",
-    confidenceThreshold: 70,
+    confidenceThreshold: 65,
     holdDurationMs: 1500,
   });
 
@@ -38,7 +37,7 @@ export function App() {
               <Route path="/" element={<HomePage isSimulationMode={modelHook.isSimulationMode} />} />
               <Route path="/kamus" element={<DictionaryPage />} />
               <Route path="/latihan" element={<PracticePage modelHook={modelHook} />} />
-              <Route path="/narasi" element={<NarrativePage modelHook={modelHook} />} />
+              <Route path="/narasi" element={<AiCompanionPage modelHook={modelHook} />} />
               <Route path="/kuis" element={<QuizPage modelHook={modelHook} />} />
               <Route path="/analitik" element={<AnalyticsPage />} />
             </Routes>
@@ -74,8 +73,7 @@ export function App() {
                   {[
                     { label: "Kamus Isyarat (A sampai Z)", path: "/kamus" },
                     { label: "Latihan Kamera", path: "/latihan" },
-                    { label: "Studio Narasi", path: "/narasi" },
-                    { label: "Kuis Eja Cepat", path: "/kuis" },
+                    { label: "Asisten SIBI", path: "/narasi" },                    { label: "Kuis Eja Cepat", path: "/kuis" },
                     { label: "Dashboard Progres", path: "/analitik" },
                   ].map((item) => (
                     <Link
@@ -98,7 +96,7 @@ export function App() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-mint" />
-                  <span>TensorFlow.js WebGL Acceleration</span>
+                  <span>ONNX Runtime WebGL + MediaPipe</span>
                 </div>
               </div>
             </div>

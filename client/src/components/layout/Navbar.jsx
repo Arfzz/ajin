@@ -5,7 +5,7 @@ import { Menu, X, Camera } from "lucide-react";
 const NAV_LINKS = [
   { label: "Kamus Huruf",  path: "/kamus" },
   { label: "Latih Kamera", path: "/latihan" },
-  { label: "Studio Narasi", path: "/narasi" },
+  { label: "Asisten SIBI", path: "/narasi" },
   { label: "Kuis Eja",     path: "/kuis" },
   { label: "Analitik",     path: "/analitik" },
 ];
