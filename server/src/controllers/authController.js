@@ -91,17 +91,20 @@ export const googleAuthCallback = async (req, res) => {
     if (isSupabaseConfigured && supabase) {
       try {
         const { data: existingUser } = await supabase
-          .from("User")
+          .from("users")
           .select("id, name, email, role")
           .eq("email", payload.email)
-          .single();
+          .maybeSingle();
 
         if (!existingUser) {
-          await supabase.from("User").insert({
-            id: payload.sub,
+          await supabase.from("users").upsert({
+            id: String(payload.sub),
             name: userData.name,
             email: userData.email,
+            picture: userData.picture,
             role: "student",
+            provider: "google",
+            updated_at: new Date().toISOString(),
           });
         }
       } catch (dbErr) {

@@ -1,7 +1,8 @@
 -- AJIN (Aplikasi Jembatan Bahasa Isyarat dan Narasi)
 -- Supabase PostgreSQL DDL & Seeder Alfabet SIBI (A-Z)
+-- Skema Terpadu untuk Frontend, Backend, dan Fitur Terbaru (Telemetri, Pindai Foto, Voice Assistant & Chatbot AI)
 
--- 1. Create SibiAlphabet Table
+-- 1. Tabel 26 Alfabet SIBI
 CREATE TABLE IF NOT EXISTS public.sibi_alphabets (
     id SERIAL PRIMARY KEY,
     letter VARCHAR(2) NOT NULL UNIQUE,
@@ -13,7 +14,19 @@ CREATE TABLE IF NOT EXISTS public.sibi_alphabets (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 2. Create User Profiles (Mirrors Supabase Auth Users)
+-- 2. Tabel Pengguna Aplikasi (Google OAuth & Sesi Login)
+CREATE TABLE IF NOT EXISTS public.users (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    picture TEXT,
+    role VARCHAR(20) DEFAULT 'student',
+    provider VARCHAR(20) DEFAULT 'google',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 2b. Tabel Profil (Kompatibilitas dengan Supabase Auth jika digunakan)
 CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
@@ -22,10 +35,10 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 3. Create User Progress
+-- 3. Tabel Progres Latihan Pengguna (Penguasaan Huruf)
 CREATE TABLE IF NOT EXISTS public.user_progress (
     id SERIAL PRIMARY KEY,
-    user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL,
     alphabet_id INT NOT NULL REFERENCES public.sibi_alphabets(id) ON DELETE CASCADE,
     is_mastered BOOLEAN DEFAULT FALSE,
     best_confidence FLOAT DEFAULT 0.0,
@@ -34,11 +47,12 @@ CREATE TABLE IF NOT EXISTS public.user_progress (
     UNIQUE(user_id, alphabet_id)
 );
 
--- 4. Create Session Telemetry (Pengujian Empiris untuk Skripsi/Analitik)
+-- 4. Tabel Telemetri Sesi (Pengujian Empiris untuk Skripsi & Dashboard Analitik)
+-- Mendukung seluruh mode: 'practice' (Latih Kamera), 'quiz' (Kuis Eja), 'narrative' (Studio Narasi), dan 'photo' (Pindai Foto)
 CREATE TABLE IF NOT EXISTS public.session_telemetries (
     id SERIAL PRIMARY KEY,
-    user_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
-    session_type VARCHAR(50) NOT NULL, -- 'practice', 'narrative', 'quiz'
+    user_id TEXT, -- Mendukung UUID maupun ID tamu string / null
+    session_type VARCHAR(50) NOT NULL, -- 'practice', 'narrative', 'quiz', 'photo'
     target_label VARCHAR(10),
     predicted_label VARCHAR(10),
     confidence FLOAT NOT NULL,
@@ -49,7 +63,26 @@ CREATE TABLE IF NOT EXISTS public.session_telemetries (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 5. Seed 26 Alfabet SIBI (A-Z)
+-- 5. Tabel Riwayat Chatbot & Voice Assistant AJIN
+CREATE TABLE IF NOT EXISTS public.chat_messages (
+    id SERIAL PRIMARY KEY,
+    user_id TEXT,
+    session_id VARCHAR(100),
+    user_message TEXT NOT NULL,
+    ai_reply TEXT NOT NULL,
+    target_letter VARCHAR(2),
+    suggested_action VARCHAR(50), -- 'practice', 'dictionary', 'photo', 'quiz'
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 6. Indeks Performa untuk Kueri Skripsi & Analitik Real-Time
+CREATE INDEX IF NOT EXISTS idx_telemetries_session_type ON public.session_telemetries(session_type);
+CREATE INDEX IF NOT EXISTS idx_telemetries_created_at ON public.session_telemetries(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_telemetries_target_label ON public.session_telemetries(target_label);
+CREATE INDEX IF NOT EXISTS idx_progress_user ON public.user_progress(user_id);
+CREATE INDEX IF NOT EXISTS idx_chat_created_at ON public.chat_messages(created_at DESC);
+
+-- 7. Seeder 26 Alfabet SIBI Resmi (A sampai Z)
 INSERT INTO public.sibi_alphabets (letter, gesture_type, description, difficulty, tips) VALUES
 ('A', 'static', 'Kepalkan empat jari rapat ke telapak tangan, ibu jari tegak lurus menempel di samping jari telunjuk.', 'easy', 'Pastikan ibu jari tidak menekuk ke depan empat jari agar tidak tertukar dengan huruf E.'),
 ('B', 'static', 'Buka empat jari lurus ke atas dan rapat. Tekuk ibu jari melintang di depan telapak tangan.', 'easy', 'Jaga empat jari tetap tegak lurus dan rapat vertikal.'),
