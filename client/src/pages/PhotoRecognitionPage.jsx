@@ -92,6 +92,32 @@ export const PhotoRecognitionPage = () => {
     setIsCameraActive(false);
   };
 
+  // Kompresi otomatis gambar ke maksimal 1024px (JPEG ~150-300 KB) agar cepat dan aman dari batas payload Vercel
+  const compressDataUrl = (dataUrl, maxDimension = 1024, quality = 0.82) =>
+    new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxDimension || height > maxDimension) {
+          if (width >= height) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          } else {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    });
+
   // Tangani upload berkas dari disk
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
@@ -107,13 +133,14 @@ export const PhotoRecognitionPage = () => {
       return;
     }
 
-    setMimeType(file.type);
     setErrorMessage(null);
     setAnalysisResult(null);
 
     const reader = new FileReader();
-    reader.onload = () => {
-      setSelectedImage(reader.result);
+    reader.onload = async () => {
+      const compressed = await compressDataUrl(reader.result);
+      setMimeType("image/jpeg");
+      setSelectedImage(compressed);
     };
     reader.readAsDataURL(file);
   };

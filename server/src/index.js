@@ -103,28 +103,35 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`===============================================`);
-  console.log(`  AJIN SIBI Backend berjalan pada port ${PORT}`);
-  console.log(`  Mode: ${IS_PRODUCTION ? "PRODUCTION" : "DEVELOPMENT"}`);
-  console.log(`  Endpoint Health Check: /api/health`);
-  console.log(`  Endpoint Google Auth:  /api/auth/google`);
-  console.log(`===============================================`);
-});
+const IS_VERCEL = Boolean(process.env.VERCEL);
 
-// Listener pendamping port 8000 HANYA saat development lokal jika GOOGLE_REDIRECT_URI memakai localhost:8000
-const redirectUri = process.env.GOOGLE_REDIRECT_URI || "";
-if (!IS_PRODUCTION && redirectUri.includes("localhost:8000")) {
-  try {
-    const server8000 = app.listen(8000, () => {
-      console.log(`  AJIN OAuth Callback Listener lokal aktif pada port 8000`);
-    });
-    server8000.on("error", (e) => {
-      console.warn(
-        `[AJIN Auth] Listener port 8000 dilewati (${e.message}). Callback tetap aktif di port ${PORT}.`
-      );
-    });
-  } catch (e) {
-    console.warn(`[AJIN Auth] Port 8000 tidak dapat dibuka:`, e.message);
+if (!IS_VERCEL) {
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`===============================================`);
+    console.log(`  AJIN SIBI Backend berjalan pada port ${PORT}`);
+    console.log(`  Mode: ${IS_PRODUCTION ? "PRODUCTION" : "DEVELOPMENT"}`);
+    console.log(`  Endpoint Health Check: /api/health`);
+    console.log(`  Endpoint Google Auth:  /api/auth/google`);
+    console.log(`===============================================`);
+  });
+
+  // Listener pendamping port 8000 HANYA saat development lokal jika GOOGLE_REDIRECT_URI memakai localhost:8000
+  const redirectUri = process.env.GOOGLE_REDIRECT_URI || "";
+  if (!IS_PRODUCTION && redirectUri.includes("localhost:8000")) {
+    try {
+      const server8000 = app.listen(8000, () => {
+        console.log(`  AJIN OAuth Callback Listener lokal aktif pada port 8000`);
+      });
+      server8000.on("error", (e) => {
+        console.warn(
+          `[AJIN Auth] Listener port 8000 dilewati (${e.message}). Callback tetap aktif di port ${PORT}.`
+        );
+      });
+    } catch (e) {
+      console.warn(`[AJIN Auth] Port 8000 tidak dapat dibuka:`, e.message);
+    }
   }
 }
+
+export { app };
+export default app;

@@ -6,6 +6,7 @@ import { supabase, isSupabaseConfigured } from "../config/supabase.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const PROGRESS_FILE_PATH = path.resolve(__dirname, "../data/progress_store.json");
+const IS_SERVERLESS = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
 
 // Cache pemetaan huruf A-Z -> sibi_alphabets.id dari Supabase
 let alphabetIdMapCache = null;
@@ -40,9 +41,10 @@ const getAlphabetIdForLetter = async (rawLetter, providedId) => {
   return code >= 1 && code <= 26 ? code : null;
 };
 
-// Helper muat progres dari file lokal
+// Helper muat progres dari file lokal (hanya saat non-serverless)
 const loadProgressFromFile = () => {
   const store = new Map();
+  if (IS_SERVERLESS) return store;
   try {
     if (fs.existsSync(PROGRESS_FILE_PATH)) {
       const raw = fs.readFileSync(PROGRESS_FILE_PATH, "utf8");
@@ -61,8 +63,9 @@ const loadProgressFromFile = () => {
   return store;
 };
 
-// Helper simpan progres ke file lokal
+// Helper simpan progres ke file lokal (dilewati di lingkungan serverless read-only seperti Vercel)
 const saveProgressToFile = (store) => {
+  if (IS_SERVERLESS) return;
   try {
     const list = Array.from(store.values());
     fs.writeFileSync(PROGRESS_FILE_PATH, JSON.stringify(list, null, 2), "utf8");

@@ -6,9 +6,11 @@ import { supabase, isSupabaseConfigured } from "../config/supabase.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const TELEMETRY_FILE_PATH = path.resolve(__dirname, "../data/telemetry_store.json");
+const IS_SERVERLESS = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
 
-// Helper muat log dari file lokal
+// Helper muat log dari file lokal (hanya saat berjalan lokal / non-serverless)
 const loadTelemetryFromFile = () => {
+  if (IS_SERVERLESS) return [];
   try {
     if (fs.existsSync(TELEMETRY_FILE_PATH)) {
       const raw = fs.readFileSync(TELEMETRY_FILE_PATH, "utf8");
@@ -21,8 +23,9 @@ const loadTelemetryFromFile = () => {
   return [];
 };
 
-// Helper simpan log ke file lokal
+// Helper simpan log ke file lokal (dilewati di lingkungan serverless read-only seperti Vercel)
 const saveTelemetryToFile = (logs) => {
+  if (IS_SERVERLESS) return;
   try {
     fs.writeFileSync(TELEMETRY_FILE_PATH, JSON.stringify(logs.slice(0, 1000), null, 2), "utf8");
   } catch (err) {
