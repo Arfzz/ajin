@@ -87,28 +87,30 @@ export const googleAuthCallback = async (req, res) => {
       provider: "google",
     };
 
-    // Sinkronkan ke Supabase jika database Supabase aktif
+    // Sinkronkan & perbarui profil pengguna ke tabel public.users di Supabase setiap kali login
     if (isSupabaseConfigured && supabase) {
-      try {
-        const { data: existingUser } = await supabase
-          .from("users")
-          .select("id, name, email, role")
-          .eq("email", payload.email)
-          .maybeSingle();
-
-        if (!existingUser) {
-          await supabase.from("users").upsert({
+      const nowIso = new Date().toISOString();
+      const { error: upsertErr } = await supabase
+        .from("users")
+        .upsert(
+          {
             id: String(payload.sub),
             name: userData.name,
             email: userData.email,
             picture: userData.picture,
             role: "student",
             provider: "google",
-            updated_at: new Date().toISOString(),
-          });
-        }
-      } catch (dbErr) {
-        console.warn("[AJIN Auth] Gagal sinkronisasi data user ke Supabase:", dbErr.message);
+            last_login_at: nowIso,
+            updated_at: nowIso,
+          },
+          { onConflict: "id" }
+        );
+
+      if (upsertErr) {
+        console.error(
+          `[AJIN Auth] Gagal sinkronisasi user ke Supabase (${upsertErr.code || "ERR"}):`,
+          upsertErr.message
+        );
       }
     }
 

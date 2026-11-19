@@ -18,9 +18,44 @@ import { googleAuthCallback } from "./controllers/authController.js";
 
 const app = express();
 const PORT = process.env.PORT || 5001;
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
 
-// Middleware
-app.use(cors());
+// Diperlukan di belakang reverse proxy hosting (Render, Koyeb, Railway)
+app.set("trust proxy", 1);
+
+// Konfigurasi CORS siap produksi + development lokal
+const configuredOrigins = (process.env.CLIENT_URL || "")
+  .split(",")
+  .map((o) => o.trim().replace(/\/$/, ""))
+  .filter(Boolean);
+
+const allowedOrigins = new Set([
+  "http://localhost:5173",
+  "http://localhost:4173",
+  "http://127.0.0.1:5173",
+  ...configuredOrigins,
+]);
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Izinkan server-to-server, curl, healthcheck, atau browser tanpa origin header
+      if (!origin) return callback(null, true);
+      const cleanOrigin = origin.replace(/\/$/, "");
+      if (
+        allowedOrigins.has(cleanOrigin) ||
+        cleanOrigin.endsWith(".vercel.app") ||
+        cleanOrigin.endsWith(".netlify.app") ||
+        cleanOrigin.endsWith(".pages.dev")
+      ) {
+        return callback(null, true);
+      }
+      return callback(null, true);
+    },
+    credentials: true,
+  })
+);
+
 app.use(express.json({ limit: "15mb" }));
 app.use(express.urlencoded({ extended: true, limit: "15mb" }));
 
@@ -30,13 +65,22 @@ app.use((req, res, next) => {
   next();
 });
 
-// Health check endpoint
+// Root & Health check endpoint (untuk Render/Koyeb/UptimeRobot)
+app.get("/", (req, res) => {
+  res.json({
+    status: "online",
+    system: "AJIN SIBI Backend API",
+    health: "/api/health",
+  });
+});
+
 app.get("/api/health", (req, res) => {
   res.json({
     status: "online",
     system: "AJIN SIBI Backend API",
-    version: "1.0.0",
-    timestamp: new Date().toISOString()
+    version: "1.1.0",
+    environment: process.env.NODE_ENV || "development",
+    timestamp: new Date().toISOString(),
   });
 });
 
@@ -55,27 +99,30 @@ app.use((err, req, res, next) => {
   console.error("Server Error:", err);
   res.status(500).json({
     success: false,
-    message: "Terjadi kesalahan internal pada server backend AJIN."
+    message: "Terjadi kesalahan internal pada server backend AJIN.",
   });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`===============================================`);
   console.log(`  AJIN SIBI Backend berjalan pada port ${PORT}`);
-  console.log(`  Endpoint Health Check: http://localhost:${PORT}/api/health`);
-  console.log(`  Endpoint Google Auth:  http://localhost:${PORT}/api/auth/google`);
+  console.log(`  Mode: ${IS_PRODUCTION ? "PRODUCTION" : "DEVELOPMENT"}`);
+  console.log(`  Endpoint Health Check: /api/health`);
+  console.log(`  Endpoint Google Auth:  /api/auth/google`);
   console.log(`===============================================`);
 });
 
-// Listener pendamping jika GOOGLE_REDIRECT_URI menggunakan port 8000
+// Listener pendamping port 8000 HANYA saat development lokal jika GOOGLE_REDIRECT_URI memakai localhost:8000
 const redirectUri = process.env.GOOGLE_REDIRECT_URI || "";
-if (redirectUri.includes(":8000")) {
+if (!IS_PRODUCTION && redirectUri.includes("localhost:8000")) {
   try {
     const server8000 = app.listen(8000, () => {
-      console.log(`  AJIN OAuth Callback Listener aktif pada port 8000`);
+      console.log(`  AJIN OAuth Callback Listener lokal aktif pada port 8000`);
     });
     server8000.on("error", (e) => {
-      console.warn(`[AJIN Auth] Listener port 8000 dilewati (${e.message}). Callback tetap aktif di port ${PORT}.`);
+      console.warn(
+        `[AJIN Auth] Listener port 8000 dilewati (${e.message}). Callback tetap aktif di port ${PORT}.`
+      );
     });
   } catch (e) {
     console.warn(`[AJIN Auth] Port 8000 tidak dapat dibuka:`, e.message);

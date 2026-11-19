@@ -81,10 +81,12 @@ export function App() {
                 {/* Nav Links Grid */}
                 <div className="md:col-span-7 flex flex-wrap gap-x-8 gap-y-4 md:justify-end items-center">
                   {[
-                    { label: "Kamus Isyarat (A sampai Z)", path: "/kamus" },
+                    { label: "Kamus 3D", path: "/kamus" },
                     { label: "Latihan Kamera", path: "/latihan" },
-                    { label: "Asisten SIBI", path: "/narasi" },                    { label: "Kuis Eja Cepat", path: "/kuis" },
-                    { label: "Dashboard Progres", path: "/analitik" },
+                    { label: "Kuis Eja", path: "/kuis" },
+                    { label: "Jembatan Narasi", path: "/narasi" },
+                    { label: "Pindai Foto", path: "/foto" },
+                    { label: "Rapor Belajar", path: "/analitik" },
                   ].map((item) => (
                     <Link
                       key={item.path}

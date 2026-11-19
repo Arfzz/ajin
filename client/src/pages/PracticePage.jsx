@@ -1,13 +1,153 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import confetti from "canvas-confetti";
-import { ChevronLeft, ChevronRight, CheckCircle2, RotateCcw, Award, Lightbulb, Flame, Zap, Camera } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  CheckCircle2,
+  Award,
+  Lightbulb,
+  Flame,
+} from "lucide-react";
 
 import { WebcamCanvas } from "../components/vision/WebcamCanvas";
 import { TelemetryBar } from "../components/vision/TelemetryBar";
-import { GuidePlayer } from "../components/remotion/GuidePlayer";
 import { SIBI_ALPHABETS_FALLBACK } from "../services/fallbackData";
 import { saveProgress, sendTelemetry } from "../services/api";
+import {
+  HAND_CONNECTIONS,
+  GROUP_COLORS,
+  NODE_COLORS,
+  getSibiHandPose3D,
+} from "../components/creative/Hero3DSibiStage";
+
+/**
+ * Diagram Vektor SVG 21-Landmark Tangan SIBI yang ringan (0 loop rAF)
+ * sehingga 100% beban GPU didedikasikan untuk inferensi kamera real-time.
+ */
+const TargetHandDiagramSvg = ({ letter }) => {
+  const geometry = useMemo(() => {
+    const pose = getSibiHandPose3D(letter);
+    const rotX = 0.14 + (pose.viewPitch || 0);
+    const rotY = -0.22 + (pose.viewYaw || 0);
+
+    const projectPt = ([vx, vy, vz]) => {
+      const cy = Math.cos(rotY);
+      const sy = Math.sin(rotY);
+      const x1 = vx * cy + vz * sy;
+      const z1 = -vx * sy + vz * cy;
+
+      const cx = Math.cos(rotX);
+      const sx = Math.sin(rotX);
+      const y2 = vy * cx - z1 * sx;
+      const z2 = vy * sx + z1 * cx;
+
+      const cameraDist = 2.8;
+      const scale = cameraDist / (cameraDist - z2);
+      return {
+        x: 60 + x1 * 50 * scale,
+        y: 66 - y2 * 50 * scale,
+        z: z2,
+      };
+    };
+
+    const pts = pose.points.map(projectPt);
+
+    const bones = HAND_CONNECTIONS.map((conn, idx) => {
+      const a = pts[conn.from];
+      const b = pts[conn.to];
+      return {
+        id: `b-${idx}`,
+        x1: a.x,
+        y1: a.y,
+        x2: b.x,
+        y2: b.y,
+        z: (a.z + b.z) / 2,
+        color: GROUP_COLORS[conn.group],
+        width: conn.group === "palm" ? 4.4 : 5.0,
+      };
+    }).sort((u, v) => u.z - v.z);
+
+    const joints = pts
+      .map((node, idx) => ({
+        id: `j-${idx}`,
+        x: node.x,
+        y: node.y,
+        z: node.z,
+        color: NODE_COLORS[idx],
+        isTip: idx === 4 || idx === 8 || idx === 12 || idx === 16 || idx === 20,
+        isWrist: idx === 0,
+      }))
+      .sort((u, v) => u.z - v.z);
+
+    return { bones, joints, dynamic: pose.dynamic };
+  }, [letter]);
+
+  return (
+    <svg
+      viewBox="0 0 120 120"
+      className="w-28 h-28 sm:w-32 sm:h-32 shrink-0 border-[2.5px] border-ink bg-paper-2 shadow-[3px_3px_0_#111]"
+      aria-label={`Diagram bentuk tangan huruf ${letter}`}
+    >
+      <line x1="14" y1="102" x2="106" y2="102" stroke="#111111" strokeOpacity="0.15" strokeWidth="1" />
+      <line x1="60" y1="12" x2="60" y2="108" stroke="#111111" strokeOpacity="0.08" strokeWidth="1" strokeDasharray="2 2" />
+
+      {geometry.dynamic === "J" && (
+        <path
+          d="M 84 28 L 84 66 Q 84 86 62 86 Q 45 86 48 68"
+          fill="none"
+          stroke="#FF4D4D"
+          strokeWidth="2.5"
+          strokeDasharray="4 2"
+        />
+      )}
+      {geometry.dynamic === "Z" && (
+        <path
+          d="M 38 28 L 82 28 L 38 64 L 84 64"
+          fill="none"
+          stroke="#111111"
+          strokeWidth="2.5"
+          strokeDasharray="4 2"
+        />
+      )}
+
+      {geometry.bones.map((b) => (
+        <g key={b.id}>
+          <line
+            x1={b.x1}
+            y1={b.y1}
+            x2={b.x2}
+            y2={b.y2}
+            stroke="#111111"
+            strokeWidth={b.width + 2.4}
+            strokeLinecap="round"
+          />
+          <line
+            x1={b.x1}
+            y1={b.y1}
+            x2={b.x2}
+            y2={b.y2}
+            stroke={b.color}
+            strokeWidth={b.width}
+            strokeLinecap="round"
+          />
+        </g>
+      ))}
+
+      {geometry.joints.map((j) => (
+        <circle
+          key={j.id}
+          cx={j.x}
+          cy={j.y}
+          r={j.isWrist ? 3.8 : j.isTip ? 3.5 : 2.5}
+          fill={j.isTip ? j.color : "#ffffff"}
+          stroke="#111111"
+          strokeWidth="1.6"
+        />
+      ))}
+    </svg>
+  );
+};
 
 export const PracticePage = ({ modelHook }) => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -25,6 +165,13 @@ export const PracticePage = ({ modelHook }) => {
   const [saveNotification, setSaveNotification] = useState(null);
 
   const currentAlphabet = SIBI_ALPHABETS_FALLBACK[currentIndex];
+  const isDynamic = currentAlphabet.gestureType === "dynamic";
+  const difficultyLabel =
+    currentAlphabet.difficulty === "easy"
+      ? "Mudah"
+      : currentAlphabet.difficulty === "medium"
+      ? "Sedang"
+      : "Sulit";
 
   // Auto-clear notification setelah 4 detik
   useEffect(() => {
@@ -39,7 +186,6 @@ export const PracticePage = ({ modelHook }) => {
     setSearchParams({ letter: currentAlphabet.letter }, { replace: true });
   }, [currentIndex, currentAlphabet.letter, setSearchParams]);
 
-  // Navigasi huruf sebelumnya / berikutnya
   const handlePrev = () => {
     setCurrentIndex((prev) => (prev > 0 ? prev - 1 : SIBI_ALPHABETS_FALLBACK.length - 1));
   };
@@ -48,12 +194,10 @@ export const PracticePage = ({ modelHook }) => {
     setCurrentIndex((prev) => (prev < SIBI_ALPHABETS_FALLBACK.length - 1 ? prev + 1 : 0));
   };
 
-  // Tangani saat isyarat terkunci secara otomatis oleh MediaPipe
   const handleLetterLocked = (detectedLetter) => {
     const isMatch = detectedLetter.toUpperCase() === currentAlphabet.letter;
     const conf = modelHook.telemetry.confidence || 85;
 
-    // Catat telemetri
     sendTelemetry({
       sessionType: "practice",
       targetLabel: currentAlphabet.letter,
@@ -77,21 +221,27 @@ export const PracticePage = ({ modelHook }) => {
         colors: ["#FFD000", "#FF4D4D", "#0055FF", "#00C68E"],
       });
 
-      // Simpan progres ke backend / local storage
       saveProgress({
         letter: currentAlphabet.letter,
         alphabetId: currentAlphabet.id,
         isMastered: true,
+        isSuccess: true,
         confidence: conf,
       });
 
       setSaveNotification({
         isSuccess: true,
-        message: `Bagus! Huruf ${currentAlphabet.letter} berhasil dikunci dan dicatat ke Analitik (+25 XP).`,
+        message: `Bagus! Huruf ${currentAlphabet.letter} berhasil dikunci dan dicatat ke Rapor Belajar (+25 XP).`,
       });
     } else {
-      // Salah huruf, reset streak
       setStreakCount(0);
+      saveProgress({
+        letter: currentAlphabet.letter,
+        alphabetId: currentAlphabet.id,
+        isMastered: false,
+        isSuccess: false,
+        confidence: conf,
+      });
       setSaveNotification({
         isSuccess: false,
         message: `Terdeteksi huruf ${detectedLetter}, target latihan adalah ${currentAlphabet.letter}.`,
@@ -99,9 +249,11 @@ export const PracticePage = ({ modelHook }) => {
     }
   };
 
-  // Catat manual hasil latihan huruf saat ini
   const handleManualRecord = () => {
-    const detected = modelHook.telemetry.predictedLetter !== "-" ? modelHook.telemetry.predictedLetter : currentAlphabet.letter;
+    const detected =
+      modelHook.telemetry.predictedLetter !== "-"
+        ? modelHook.telemetry.predictedLetter
+        : currentAlphabet.letter;
     const isMatch = detected.toUpperCase() === currentAlphabet.letter;
     const conf = modelHook.telemetry.confidence > 0 ? modelHook.telemetry.confidence : 85;
 
@@ -119,6 +271,7 @@ export const PracticePage = ({ modelHook }) => {
       letter: currentAlphabet.letter,
       alphabetId: currentAlphabet.id,
       isMastered: isMatch,
+      isSuccess: isMatch,
       confidence: conf,
     });
 
@@ -138,51 +291,66 @@ export const PracticePage = ({ modelHook }) => {
     });
   };
 
+  const predicted = modelHook.telemetry.predictedLetter || "-";
+  const isMatchingLive = predicted === currentAlphabet.letter;
+
   return (
-    <div className="min-h-screen bg-paper text-ink pt-20 pb-20">
+    <div className="min-h-screen bg-paper text-ink pt-16 pb-16">
       {/* Top Banner Header */}
-      <div className="border-b-[3px] border-ink bg-paper-2 py-8 px-4 sm:px-6">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="border-b-[3px] border-ink bg-paper-2 py-6 px-4 sm:px-6">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="font-display font-black text-3xl sm:text-4xl text-ink tracking-tight">
+            <h1 className="font-display font-black text-2xl sm:text-4xl text-ink tracking-tight">
               Latihan Mandiri: <span className="highlight">Huruf {currentAlphabet.letter}</span>
             </h1>
-            <p className="font-sans text-xs sm:text-sm text-ink/70 font-medium mt-1">
-              Posisikan tangan di depan kamera sesuai panduan visual. Tahan gestur stabil selama 1,5 detik hingga indikator hijau terkunci.
+            <p className="font-sans text-xs sm:text-sm text-ink/80 font-medium mt-1">
+              Tiru bentuk tangan pada kartu referensi, lalu tahan posisi stabil selama 1 detik di dalam kotak kamera.
             </p>
           </div>
 
           {/* Gamified Stat Badges */}
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="border-2 border-ink bg-yellow px-4 py-2 shadow-[3px_3px_0_#111] flex items-center gap-2 font-mono">
-              <Flame className="w-5 h-5 text-coral fill-coral" />
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div className="border-2 border-ink bg-yellow px-3.5 py-1.5 shadow-[3px_3px_0_#111] flex items-center gap-2 font-mono">
+              <Flame className="w-4 h-4 text-coral fill-coral" aria-hidden="true" />
               <div>
-                <span className="text-[10px] uppercase font-bold text-ink/60 block leading-none">Streak</span>
-                <span className="text-lg font-black text-ink leading-tight">{streakCount}x</span>
+                <span className="text-[10px] uppercase font-bold text-ink/75 block leading-none">
+                  Streak
+                </span>
+                <span className="text-base font-black text-ink leading-tight tabular-nums">
+                  {streakCount}x
+                </span>
               </div>
             </div>
 
-            <div className="border-2 border-ink bg-mint px-4 py-2 shadow-[3px_3px_0_#111] flex items-center gap-2 font-mono">
-              <Award className="w-5 h-5 text-ink" />
+            <div className="border-2 border-ink bg-mint px-3.5 py-1.5 shadow-[3px_3px_0_#111] flex items-center gap-2 font-mono">
+              <Award className="w-4 h-4 text-ink" aria-hidden="true" />
               <div>
-                <span className="text-[10px] uppercase font-bold text-ink/60 block leading-none">Total EXP</span>
-                <span className="text-lg font-black text-ink leading-tight">+{totalXp} XP</span>
+                <span className="text-[10px] uppercase font-bold text-ink/75 block leading-none">
+                  Total EXP
+                </span>
+                <span className="text-base font-black text-ink leading-tight tabular-nums">
+                  +{totalXp} XP
+                </span>
               </div>
             </div>
 
-            <div className="border-2 border-ink bg-paper px-4 py-2 shadow-[3px_3px_0_#111] flex items-center gap-2 font-mono">
-              <CheckCircle2 className="w-5 h-5 text-cobalt" />
+            <div className="border-2 border-ink bg-paper px-3.5 py-1.5 shadow-[3px_3px_0_#111] flex items-center gap-2 font-mono">
+              <CheckCircle2 className="w-4 h-4 text-cobalt" aria-hidden="true" />
               <div>
-                <span className="text-[10px] uppercase font-bold text-ink/60 block leading-none">Selesai</span>
-                <span className="text-lg font-black text-ink leading-tight">{successCount}x</span>
+                <span className="text-[10px] uppercase font-bold text-ink/75 block leading-none">
+                  Selesai
+                </span>
+                <span className="text-base font-black text-ink leading-tight tabular-nums">
+                  {successCount}x
+                </span>
               </div>
             </div>
           </div>
         </div>
 
         {/* 26-Letter Quick Switcher Rail */}
-        <div className="max-w-7xl mx-auto mt-6 pt-4 border-t-2 border-ink/15 overflow-x-auto pb-2 flex items-center gap-1.5 scrollbar-thin">
-          <span className="text-xs font-mono font-bold uppercase text-ink/40 mr-2 whitespace-nowrap">
+        <div className="max-w-7xl mx-auto mt-4 pt-3 border-t-2 border-ink/15 overflow-x-auto pb-1 flex items-center gap-1.5 scrollbar-thin">
+          <span className="text-xs font-mono font-black uppercase text-ink mr-1.5 whitespace-nowrap">
             Pilih Huruf:
           </span>
           {SIBI_ALPHABETS_FALLBACK.map((item, idx) => {
@@ -190,11 +358,12 @@ export const PracticePage = ({ modelHook }) => {
             return (
               <button
                 key={item.letter}
+                type="button"
                 onClick={() => setCurrentIndex(idx)}
-                className={`w-9 h-9 shrink-0 border-2 border-ink font-display font-black text-sm transition-all ${
+                className={`w-8 h-8 shrink-0 border-2 border-ink font-display font-black text-xs transition-all cursor-pointer ${
                   isSelected
-                    ? "bg-yellow text-ink shadow-[2px_2px_0_#111] -translate-y-0.5 scale-105"
-                    : "bg-paper text-ink/70 hover:bg-paper-3 hover:text-ink shadow-[1px_1px_0_#111]"
+                    ? "bg-yellow text-ink shadow-[2px_2px_0_#111] -translate-y-0.5"
+                    : "bg-paper text-ink hover:bg-paper-3 shadow-[1px_1px_0_#111]"
                 }`}
                 aria-label={`Pilih huruf ${item.letter}`}
                 aria-pressed={isSelected}
@@ -207,93 +376,127 @@ export const PracticePage = ({ modelHook }) => {
       </div>
 
       {/* Main Studio Grid */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Kolom Kiri (5 Kolom): Target Card & Remotion Guide */}
-          <div className="lg:col-span-5 space-y-6">
-            {/* Target Letter Card */}
-            <div className="card p-6 bg-paper relative overflow-hidden nb-thick">
-              <div className="flex items-start justify-between mb-4 border-b-2 border-ink pb-3">
-                <div>
-                  <span className="tag tag-yellow text-[10px] mb-1">
-                    TARGET LATIHAN AKTIF
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* Kolom Kiri (4 Kolom): Kartu Referensi Ringkas & To-The-Point */}
+          <div className="lg:col-span-4">
+            <div className="bg-paper border-[3px] border-ink shadow-[6px_6px_0_#111]">
+              {/* Header Bar Ringkas */}
+              <div className="bg-yellow border-b-[3px] border-ink px-4 py-2.5 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 bg-ink text-yellow font-mono font-black text-xs">
+                    #{String(currentAlphabet.id).padStart(2, "0")}/26
                   </span>
-                  <div className="flex items-baseline gap-3">
-                    <span className="font-display font-black text-7xl text-ink leading-none">
+                  <span className="font-mono text-xs font-black uppercase text-ink">
+                    {isDynamic ? "Gerak Dinamis" : "Gestur Statis"}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={handlePrev}
+                    className="w-8 h-8 border-2 border-ink bg-paper hover:bg-paper-2 flex items-center justify-center shadow-[2px_2px_0_#111] cursor-pointer"
+                    title="Huruf Sebelumnya"
+                    aria-label="Huruf Sebelumnya"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleNext}
+                    className="w-8 h-8 border-2 border-ink bg-paper hover:bg-paper-2 flex items-center justify-center shadow-[2px_2px_0_#111] cursor-pointer"
+                    title="Huruf Berikutnya"
+                    aria-label="Huruf Berikutnya"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-4 sm:p-5 space-y-4">
+                {/* Baris Utama: Huruf Target + Diagram 21-Landmark Side-by-Side */}
+                <div className="flex items-center justify-between gap-4 pb-4 border-b-2 border-ink/15">
+                  <div>
+                    <span className="font-display font-black text-7xl sm:text-8xl text-ink leading-none tracking-tight block">
                       {currentAlphabet.letter}
                     </span>
-                    <span className="font-mono text-xs font-bold uppercase text-ink/60">
-                      {currentAlphabet.gestureType === "dynamic" ? "Gerak Dinamis" : "Gestur Statis"}
+                    <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                      <span
+                        className={`tag text-[10px] ${
+                          currentAlphabet.difficulty === "easy"
+                            ? "tag-mint"
+                            : currentAlphabet.difficulty === "medium"
+                            ? "tag-yellow"
+                            : "tag-coral"
+                        }`}
+                      >
+                        {difficultyLabel}
+                      </span>
+                      <Link
+                        to={`/kamus?letter=${currentAlphabet.letter}`}
+                        className="font-mono text-[11px] font-bold text-cobalt hover:underline"
+                      >
+                        Lihat 3D di Kamus
+                      </Link>
+                    </div>
+                  </div>
+
+                  {/* Diagram Anatomi 21 Titik Tangan */}
+                  <TargetHandDiagramSvg letter={currentAlphabet.letter} />
+                </div>
+
+                {/* Instruksi Langsung (Tanpa Kotak Berlapis-lapis) */}
+                <div>
+                  <span className="font-mono text-[11px] font-black uppercase tracking-wider text-ink block mb-1">
+                    Posisi Jari:
+                  </span>
+                  <p className="font-sans text-xs sm:text-sm font-semibold text-ink leading-relaxed">
+                    {currentAlphabet.description}
+                  </p>
+                </div>
+
+                {/* Tips Singkat Satu Baris */}
+                {currentAlphabet.tips && (
+                  <div className="p-3 bg-yellow/25 border-2 border-ink flex items-start gap-2.5 text-xs text-ink">
+                    <Lightbulb className="w-4 h-4 text-ink shrink-0 mt-0.5" aria-hidden="true" />
+                    <p className="font-medium leading-relaxed">{currentAlphabet.tips}</p>
+                  </div>
+                )}
+
+                {/* Komparator Live Target vs Prediksi Kamera */}
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <div className="p-2.5 bg-paper-2 border-2 border-ink text-center">
+                    <span className="font-mono text-[10px] font-bold uppercase text-ink/75 block">
+                      Target
+                    </span>
+                    <span className="font-display font-black text-2xl text-ink leading-tight">
+                      {currentAlphabet.letter}
+                    </span>
+                  </div>
+                  <div
+                    className={`p-2.5 border-2 border-ink text-center transition-colors ${
+                      isMatchingLive ? "bg-mint text-ink" : "bg-paper-2 text-ink"
+                    }`}
+                  >
+                    <span className="font-mono text-[10px] font-bold uppercase text-ink/75 block">
+                      Terdeteksi
+                    </span>
+                    <span className="font-display font-black text-2xl leading-tight">
+                      {predicted}
                     </span>
                   </div>
                 </div>
-
-                <div className="flex flex-col items-end">
-                  <span className="tag tag-mint text-[10px]">
-                    Tingkat: {currentAlphabet.difficulty}
-                  </span>
-                  <div className="flex items-center gap-1 mt-3">
-                    <button
-                      onClick={handlePrev}
-                      className="p-1.5 border border-ink bg-paper-2 hover:bg-yellow shadow-[2px_2px_0_#111]"
-                      title="Huruf Sebelumnya"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={handleNext}
-                      className="p-1.5 border border-ink bg-paper-2 hover:bg-yellow shadow-[2px_2px_0_#111]"
-                      title="Huruf Berikutnya"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Finger Instruction */}
-              <div className="mb-4">
-                <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-ink/70 mb-1.5">
-                  Cara Membentuk Jari:
-                </h4>
-                <p className="font-sans text-sm font-medium text-ink leading-relaxed p-3 bg-paper-2 border border-ink">
-                  {currentAlphabet.description}
-                </p>
-              </div>
-
-              {/* Tips Box */}
-              {currentAlphabet.tips && (
-                <div className="p-3 bg-yellow/20 border border-ink flex items-start gap-2.5 text-xs text-ink mb-4">
-                  <Lightbulb className="w-4 h-4 text-coral shrink-0 mt-0.5" />
-                  <p className="font-medium leading-relaxed">{currentAlphabet.tips}</p>
-                </div>
-              )}
-
-              {/* Procedural Hand Animation Preview */}
-              <div className="border-2 border-ink bg-paper-2 p-3 shadow-[3px_3px_0_#111]">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-ink/60">
-                    Simulasi Gerakan Tangan:
-                  </span>
-                  <span className="text-[10px] font-mono text-cobalt font-bold">
-                    Putar Ulang
-                  </span>
-                </div>
-                <GuidePlayer
-                  letter={currentAlphabet.letter}
-                  isDynamic={currentAlphabet.gestureType === "dynamic"}
-                  className="w-full"
-                />
               </div>
             </div>
           </div>
 
-          {/* Kolom Kanan (7 Kolom): Live Webcam & Tactical HUD */}
-          <div className="lg:col-span-7 space-y-4">
+          {/* Kolom Kanan (8 Kolom): Live Webcam & Tactical HUD */}
+          <div className="lg:col-span-8 space-y-4">
             {/* Notifikasi Hasil Simpan Telemetri */}
             {saveNotification && (
               <div
-                className={`p-3 border-[2.5px] border-ink shadow-[4px_4px_0_#111] flex items-center justify-between gap-3 text-xs font-mono font-bold animate-in fade-in duration-150 ${
+                className={`p-3 border-[2.5px] border-ink shadow-[4px_4px_0_#111] flex items-center justify-between gap-3 text-xs font-mono font-bold ${
                   saveNotification.isSuccess ? "bg-mint text-ink" : "bg-yellow text-ink"
                 }`}
               >
@@ -326,54 +529,45 @@ export const PracticePage = ({ modelHook }) => {
               isSimulationMode={modelHook.isSimulationMode}
             />
 
-            {/* Live Coaching Bar */}
-            <div className="card p-4 bg-paper-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono">
+            {/* Live Coaching & Quick Actions Bar */}
+            <div className="p-3.5 bg-paper-2 border-[2.5px] border-ink shadow-[4px_4px_0_#111] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono">
               <div className="flex items-center gap-2">
                 <span className="tag tag-ink text-[10px]">STATUS:</span>
-                {modelHook.telemetry.predictedLetter === currentAlphabet.letter ? (
-                  <span className="font-bold text-mint flex items-center gap-1 text-sm">
-                    <CheckCircle2 className="w-4 h-4" /> Gestur cocok! Tahan posisi stabil untuk mengunci huruf.
+                {isMatchingLive ? (
+                  <span className="font-bold text-ink bg-mint px-2 py-0.5 border border-ink flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Gestur cocok! Tahan 1 detik untuk mengunci.
                   </span>
                 ) : (
-                  <span className="text-ink/80 font-bold">
-                    Bentuk huruf <strong className="text-coral underline font-black">{currentAlphabet.letter}</strong> di dalam kotak panduan kamera.
+                  <span className="text-ink font-bold">
+                    Bentuk huruf <strong className="text-coral underline font-black">{currentAlphabet.letter}</strong> di dalam kotak kamera.
                   </span>
                 )}
               </div>
 
-              {lastSuccessTime && (
-                <span className="text-[10px] text-ink/50 bg-paper px-2 py-1 border border-ink/20">
-                  Terakhir cocok: {lastSuccessTime}
-                </span>
-              )}
-            </div>
-
-            {/* Quick Next Huruf CTA & Catat Manual */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-              <Link
-                to="/kamus"
-                className="btn bg-paper hover:bg-paper-3 text-xs font-mono py-2.5 px-4"
-              >
-                ← Kembali ke Kamus
-              </Link>
-
               <div className="flex flex-wrap items-center gap-2">
+                {lastSuccessTime && (
+                  <span className="text-[10px] font-bold text-ink/75 bg-paper px-2 py-1 border border-ink">
+                    Terkunci: {lastSuccessTime}
+                  </span>
+                )}
+
                 <button
                   type="button"
                   onClick={handleManualRecord}
-                  className="btn bg-mint hover:bg-mint/80 text-ink text-xs font-mono py-2.5 px-4 flex items-center gap-1.5 shadow-[3px_3px_0_#111]"
+                  className="btn bg-mint hover:bg-mint/80 text-ink text-xs font-mono py-2 px-3 flex items-center gap-1.5 shadow-[2px_2px_0_#111]"
                   title="Simpan sesi latihan huruf ini langsung ke Analitik"
                 >
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Catat Selesai Huruf {currentAlphabet.letter}</span>
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Catat Selesai</span>
                 </button>
 
                 <button
+                  type="button"
                   onClick={handleNext}
-                  className="btn btn-yellow text-xs font-mono py-2.5 px-5 flex items-center gap-2 shadow-[4px_4px_0_#111]"
+                  className="btn btn-yellow text-xs font-mono py-2 px-3.5 flex items-center gap-1.5 shadow-[2px_2px_0_#111]"
                 >
-                  <span>Huruf Berikutnya</span>
-                  <ChevronRight className="w-4 h-4" />
+                  <span>Berikutnya</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>

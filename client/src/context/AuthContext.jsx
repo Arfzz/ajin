@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
+import { getSessionGuestId, migrateGuestProgressToUser } from "../services/api";
 
 const AuthContext = createContext(null);
 
@@ -33,13 +34,18 @@ export const AuthProvider = ({ children }) => {
           localStorage.setItem("ajin_token", decodeURIComponent(tokenParam));
         }
 
-        // Sinkronisasikan log latihan tamu lokal ke akun pengguna yang baru login
+        // Sinkronisasikan log latihan tamu lokal & Supabase ke akun pengguna yang baru login
         try {
+          const userTargetId = parsedUser.id || parsedUser.sub || parsedUser.email;
+          const guestId = getSessionGuestId();
+          if (guestId && guestId.startsWith("guest_") && userTargetId) {
+            migrateGuestProgressToUser(guestId, userTargetId);
+          }
+
           const rawLogs = localStorage.getItem("ajin_telemetry_logs");
           if (rawLogs) {
             const logs = JSON.parse(rawLogs);
             if (Array.isArray(logs)) {
-              const userTargetId = parsedUser.id || parsedUser.sub || parsedUser.email;
               const migrated = logs.map((l) => ({
                 ...l,
                 userId: l.userId?.startsWith("guest") ? userTargetId : l.userId,

@@ -1,23 +1,15 @@
-import { useState, useEffect, useRef } from "react";
-import { Check, Sparkles, Hand, Zap, ShieldCheck } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
-const SHUFFLE_LETTERS = ["A", "J", "I", "N"];
-
-const CHECKPOINTS = [
-  { id: 1, label: "Model SIBI (EfficientNet-B0)", pct: 30 },
-  { id: 2, label: "Pelacak 21 Keypoints MediaPipe", pct: 65 },
-  { id: 3, label: "Jembatan Visi & Sintesis Suara", pct: 90 },
-];
+const WORDMARK_TAIL = ["J", "I", "N"];
+const EASE_OUT_EXPO = [0.22, 1, 0.36, 1];
+const EASE_SHUTTER = [0.76, 0, 0.24, 1];
 
 export const KineticPreloader = ({ onFinish, forceShow = false }) => {
-  const [progress, setProgress] = useState(0);
-  const [letterIndex, setLetterIndex] = useState(0);
-  const [isExiting, setIsExiting] = useState(false);
-  const [isFinished, setIsFinished] = useState(false);
-  const timerRef = useRef(null);
-
-  // Cek apakah sudah pernah dimuat di sesi ini
   const [shouldShow, setShouldShow] = useState(() => {
+    if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return false;
+    }
     if (forceShow) return true;
     try {
       return !sessionStorage.getItem("ajin_preloader_seen");
@@ -26,199 +18,169 @@ export const KineticPreloader = ({ onFinish, forceShow = false }) => {
     }
   });
 
-  useEffect(() => {
-    if (!shouldShow) {
-      if (onFinish) onFinish();
-      return;
-    }
+  const [progress, setProgress] = useState(0);
+  const [isVisible, setIsVisible] = useState(shouldShow);
+  const rafRef = useRef(null);
+  const holdTimerRef = useRef(null);
+  const dismissedRef = useRef(false);
+  const onFinishRef = useRef(onFinish);
+  onFinishRef.current = onFinish;
 
-    // Efek shuffle huruf A-J-I-N
-    const letterInterval = setInterval(() => {
-      setLetterIndex((prev) => (prev + 1) % SHUFFLE_LETTERS.length);
-    }, 280);
-
-    // Hitungan kemajuan 0 ke 100%
-    const startTime = performance.now();
-    const duration = 1800; // 1.8 detik durasi masuk yang dinamis
-
-    const updateProgress = () => {
-      const elapsed = performance.now() - startTime;
-      const currentPct = Math.min(100, Math.floor((elapsed / duration) * 100));
-      setProgress(currentPct);
-
-      if (currentPct < 100) {
-        timerRef.current = requestAnimationFrame(updateProgress);
-      } else {
-        clearInterval(letterInterval);
-        // Jeda sejenak di 100% lalu mulai animasi tirai shutter
-        setTimeout(() => {
-          setIsExiting(true);
-          try {
-            sessionStorage.setItem("ajin_preloader_seen", "true");
-          } catch {}
-
-          // Selesaikan transisi keluar
-          setTimeout(() => {
-            setIsFinished(true);
-            if (onFinish) onFinish();
-          }, 650);
-        }, 300);
-      }
-    };
-
-    timerRef.current = requestAnimationFrame(updateProgress);
-
-    return () => {
-      if (timerRef.current) cancelAnimationFrame(timerRef.current);
-      clearInterval(letterInterval);
-    };
-  }, [shouldShow, onFinish]);
-
-  // Tombol pintasan lewati (Esc)
-  const handleSkip = () => {
-    setIsExiting(true);
+  const dismiss = useCallback(() => {
+    if (dismissedRef.current) return;
+    dismissedRef.current = true;
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
     try {
       sessionStorage.setItem("ajin_preloader_seen", "true");
     } catch {}
-    setTimeout(() => {
-      setIsFinished(true);
-      if (onFinish) onFinish();
-    }, 300);
-  };
-
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === "Escape") handleSkip();
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    setIsVisible(false);
   }, []);
 
-  if (!shouldShow || isFinished) return null;
+  useEffect(() => {
+    if (!shouldShow) {
+      onFinishRef.current?.();
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const durationMs = 950;
+    const startTime = performance.now();
+
+    const tick = (now) => {
+      const elapsed = now - startTime;
+      const linear = Math.min(1, elapsed / durationMs);
+      const eased = 1 - Math.pow(1 - linear, 3);
+      const pct = Math.round(eased * 100);
+      setProgress(pct);
+
+      if (linear < 1) {
+        rafRef.current = requestAnimationFrame(tick);
+      } else {
+        holdTimerRef.current = setTimeout(() => {
+          dismiss();
+        }, 180);
+      }
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
+
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") dismiss();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [shouldShow, dismiss]);
+
+  const handleExitComplete = () => {
+    document.body.style.overflow = "";
+    setShouldShow(false);
+    onFinishRef.current?.();
+  };
+
+  if (!shouldShow) return null;
 
   return (
-    <div
-      className={`fixed inset-0 z-[9999] flex flex-col pointer-events-auto transition-transform duration-700 ease-in-out ${
-        isExiting ? "-translate-y-full" : "translate-y-0"
-      }`}
-      aria-label="Layar Inisialisasi AJIN SIBI"
-      role="progressbar"
-      aria-valuenow={progress}
-      aria-valuemin={0}
-      aria-valuemax={100}
-    >
-      {/* Panel Atas Shutter */}
-      <div className="relative flex-1 bg-paper border-b-[4px] border-ink flex flex-col justify-between p-6 sm:p-10 select-none overflow-hidden">
-        {/* Header HUD */}
-        <div className="flex items-center justify-between border-b-2 border-ink pb-4">
-          <div className="flex items-center gap-3">
-            <span className="w-8 h-8 bg-yellow border-2 border-ink shadow-[2px_2px_0_#111] flex items-center justify-center font-mono font-black text-sm text-ink">
-              A
-            </span>
-            <div>
-              <span className="font-display font-black text-lg text-ink tracking-tight block leading-none">
-                AJIN
-              </span>
-              <span className="font-mono text-[9px] uppercase text-ink/60 font-bold">
-                Sistem Isyarat Bahasa Indonesia
-              </span>
-            </div>
-          </div>
+    <AnimatePresence onExitComplete={handleExitComplete}>
+      {isVisible && (
+        <motion.div
+          key="ajin-preloader"
+          initial={{ y: 0 }}
+          exit={{
+            y: "-100%",
+            transition: { duration: 0.55, ease: EASE_SHUTTER },
+          }}
+          className="fixed inset-0 z-[9999] bg-ink text-paper border-b-[4px] border-yellow flex flex-col justify-between select-none"
+          role="progressbar"
+          aria-label="Memuat AJIN Sistem Isyarat Bahasa Indonesia"
+          aria-valuenow={progress}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
+          <div className="h-10" aria-hidden="true" />
 
-          <div className="flex items-center gap-2">
-            <span className="tag tag-yellow text-[10px] font-mono">
-              INIT V2.0
-            </span>
-            <button
-              onClick={handleSkip}
-              className="btn bg-paper-2 hover:bg-paper-3 text-[10px] font-mono py-1 px-2.5 border border-ink shadow-[1px_1px_0_#111]"
-              title="Lewati inisialisasi"
-            >
-              Lewati [Esc]
-            </button>
-          </div>
-        </div>
-
-        {/* Hero Shuffle Display */}
-        <div className="max-w-xl mx-auto w-full my-auto py-6 flex flex-col items-center text-center">
-          {/* Kinetic Letter Box */}
-          <div className="relative mb-6">
-            <div className="w-24 h-24 sm:w-28 sm:h-28 bg-yellow border-[3px] border-ink shadow-[6px_6px_0_#111] flex items-center justify-center transition-all duration-150 transform hover:scale-105">
-              <span className="font-display font-black text-5xl sm:text-6xl text-ink">
-                {SHUFFLE_LETTERS[letterIndex]}
-              </span>
-            </div>
-            <div className="absolute -top-3 -right-3 w-7 h-7 bg-coral border-2 border-ink shadow-[2px_2px_0_#111] flex items-center justify-center text-white text-[10px] font-mono font-black">
-              {letterIndex + 1}
-            </div>
-          </div>
-
-          <h2 className="font-display font-black text-2xl sm:text-3xl text-ink tracking-tight mb-2">
-            Menyiapkan Studio Isyarat
-          </h2>
-          <p className="font-sans text-xs sm:text-sm text-ink/70 max-w-sm font-medium mb-6">
-            Menghubungkan pipeline visi komputer dan model klasifikasi gestur secara lokal di perambanmu.
-          </p>
-
-          {/* Chunky Percentage Counter */}
-          <div className="flex items-baseline gap-2 font-mono mb-4">
-            <span className="text-4xl sm:text-5xl font-black text-ink tracking-tight">
-              {progress}
-            </span>
-            <span className="text-lg sm:text-xl font-bold text-coral">
-              %
-            </span>
-          </div>
-
-          {/* Chunky Neobrutalist Progress Bar */}
-          <div className="w-full h-5 sm:h-6 border-[3px] border-ink bg-paper-2 p-0.5 shadow-[3px_3px_0_#111] mb-6 overflow-hidden">
-            <div
-              className="h-full bg-yellow transition-all duration-75 border-r-2 border-ink flex items-center justify-end pr-1"
-              style={{ width: `${progress}%` }}
-            >
-              <div className="w-1.5 h-full bg-ink/30" />
-            </div>
-          </div>
-
-          {/* Checkpoint Statuses */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full text-left font-mono text-[11px]">
-            {CHECKPOINTS.map((cp) => {
-              const isDone = progress >= cp.pct;
-              return (
-                <div
-                  key={cp.id}
-                  className={`p-2 border border-ink flex items-center gap-2 transition-colors ${
-                    isDone
-                      ? "bg-mint/30 border-ink text-ink font-bold"
-                      : "bg-paper-2 text-ink/40 border-dashed"
-                  }`}
+          <motion.div
+            exit={{
+              y: -24,
+              opacity: 0,
+              transition: { duration: 0.25, ease: EASE_OUT_EXPO },
+            }}
+            className="flex flex-col items-center justify-center px-6 text-center"
+          >
+            <div className="flex items-center justify-center text-[clamp(3.75rem,13vw,8.25rem)] font-display font-black leading-none tracking-[-0.045em]">
+              <span className="overflow-hidden inline-flex items-center mr-[0.09em] py-[0.04em]">
+                <motion.span
+                  initial={{ y: "110%" }}
+                  animate={{ y: "0%" }}
+                  transition={{ duration: 0.5, ease: EASE_OUT_EXPO }}
+                  className="inline-flex items-center justify-center w-[0.94em] h-[0.94em] bg-yellow text-ink"
                 >
-                  <span
-                    className={`w-4 h-4 rounded-none border border-ink flex items-center justify-center text-[9px] flex-shrink-0 ${
-                      isDone ? "bg-mint text-ink font-black" : "bg-paper text-ink/30"
-                    }`}
-                  >
-                    {isDone ? <Check className="w-3 h-3 stroke-[3]" /> : cp.id}
-                  </span>
-                  <span className="truncate">{cp.label}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+                  A
+                </motion.span>
+              </span>
 
-        {/* Footer Ribbon */}
-        <div className="border-t-2 border-ink pt-3 flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px] font-mono text-ink/60">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-mint animate-pulse" />
-            <span>26 Alfabet SIBI • MediaPipe Tasks Vision • ONNX WebAssembly</span>
+              {WORDMARK_TAIL.map((char, idx) => (
+                <span key={char} className="overflow-hidden inline-flex py-[0.04em]">
+                  <motion.span
+                    initial={{ y: "110%" }}
+                    animate={{ y: "0%" }}
+                    transition={{
+                      duration: 0.5,
+                      delay: 0.055 * (idx + 1),
+                      ease: EASE_OUT_EXPO,
+                    }}
+                    className="inline-block text-paper"
+                  >
+                    {char}
+                  </motion.span>
+                </span>
+              ))}
+            </div>
+
+            <div className="overflow-hidden mt-5">
+              <motion.p
+                initial={{ y: "100%", opacity: 0 }}
+                animate={{ y: "0%", opacity: 1 }}
+                transition={{ duration: 0.45, delay: 0.26, ease: EASE_OUT_EXPO }}
+                className="font-sans text-xs sm:text-sm font-medium text-paper/65 tracking-normal"
+              >
+                Sistem Isyarat Bahasa Indonesia (SIBI)
+              </motion.p>
+            </div>
+          </motion.div>
+
+          <div className="w-full">
+            <div className="flex items-center justify-between px-6 sm:px-10 pb-4">
+              <button
+                type="button"
+                onClick={dismiss}
+                className="font-mono text-xs text-paper/50 hover:text-paper focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow focus-visible:outline-offset-4 transition-colors cursor-pointer"
+              >
+                Lewati
+              </button>
+
+              <span className="font-mono text-xs font-bold tabular-nums text-paper/75">
+                {String(progress).padStart(3, "0")}
+              </span>
+            </div>
+
+            <div className="w-full h-[3px] bg-paper/15 overflow-hidden">
+              <div
+                className="h-full w-full bg-yellow origin-left will-change-transform"
+                style={{ transform: `scaleX(${progress / 100})` }}
+              />
+            </div>
           </div>
-          <span className="font-bold">
-            AJIN Visi Komputer 2026
-          </span>
-        </div>
-      </div>
-    </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
-

@@ -3,17 +3,17 @@
     "userId": "114826648583079417232",
     "letter": "A",
     "isMastered": true,
-    "bestConfidence": 83,
-    "attemptsCount": 1,
-    "updatedAt": "2026-11-16T10:08:47.030Z"
+    "bestConfidence": 88,
+    "attemptsCount": 2,
+    "updatedAt": "2026-11-19T16:59:38.495Z"
   },
   {
     "userId": "114826648583079417232",
     "letter": "B",
     "isMastered": true,
-    "bestConfidence": 71,
-    "attemptsCount": 1,
-    "updatedAt": "2026-11-16T10:08:55.645Z"
+    "bestConfidence": 87,
+    "attemptsCount": 4,
+    "updatedAt": "2026-11-19T16:49:40.784Z"
   },
   {
     "userId": "114826648583079417232",
@@ -22,5 +22,61 @@
     "bestConfidence": 91,
     "attemptsCount": 1,
     "updatedAt": "2026-11-16T10:09:03.878Z"
+  },
+  {
+    "userId": "guest_xl8cw3ys",
+    "letter": "A",
+    "isMastered": true,
+    "bestConfidence": 92,
+    "attemptsCount": 45,
+    "updatedAt": "2026-11-16T11:02:36.935Z"
+  },
+  {
+    "userId": "guest_kw9ql7kr",
+    "letter": "A",
+    "isMastered": true,
+    "bestConfidence": 94,
+    "attemptsCount": 1,
+    "updatedAt": "2026-11-16T11:02:59.068Z"
+  },
+  {
+    "userId": "guest_j5j77nib",
+    "letter": "A",
+    "isMastered": true,
+    "bestConfidence": 90,
+    "attemptsCount": 3,
+    "updatedAt": "2026-11-16T11:04:48.641Z"
+  },
+  {
+    "userId": "guest_3g8hc6r0",
+    "letter": "A",
+    "isMastered": true,
+    "bestConfidence": 94,
+    "attemptsCount": 13,
+    "updatedAt": "2026-11-16T11:08:12.810Z"
+  },
+  {
+    "userId": "114826648583079417232",
+    "letter": "E",
+    "isMastered": true,
+    "bestConfidence": 94,
+    "attemptsCount": 1,
+    "updatedAt": "2026-11-19T16:50:32.622Z"
+  },
+  {
+    "userId": "114826648583079417232",
+    "letter": "F",
+    "isMastered": true,
+    "bestConfidence": 91,
+    "attemptsCount": 1,
+    "updatedAt": "2026-11-19T17:18:54.600Z"
+  },
+  {
+    "userId": "114826648583079417232",
+    "letter": "I",
+    "isMastered": true,
+    "bestConfidence": 92,
+    "attemptsCount": 1,
+    "updatedAt": "2026-11-19T18:12:03.735Z"
   }
 ]

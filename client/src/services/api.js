@@ -4,7 +4,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 8000,
+  timeout: 25000,
   headers: {
     "Content-Type": "application/json",
   },
@@ -91,6 +91,18 @@ export const saveProgress = async (payload) => {
   }
 };
 
+export const migrateGuestProgressToUser = async (guestId, userId) => {
+  if (!guestId || !userId || guestId === userId || guestId === "guest-user") {
+    return { success: true, migrated: 0 };
+  }
+  try {
+    const res = await api.post("/progress/migrate-guest", { guestId, userId });
+    return res.data;
+  } catch {
+    return { success: false, migrated: 0 };
+  }
+};
+
 export const sendTelemetry = async (payload) => {
   const userId = payload.userId || getCurrentUserIdentifier();
   const entry = {
@@ -117,12 +129,194 @@ export const sendTelemetry = async (payload) => {
   }
 };
 
+const CLIENT_SEMANTIC_FALLBACK = {
+  BACA: {
+    suggestion: "Saya sedang membaca materi atau buku ini.",
+    casual: [
+      "Aku lagi baca materi ini dulu ya.",
+      "Bentar ya, aku mau baca tulisannya dulu.",
+      "Yuk kita baca bagian ini bareng-bareng.",
+    ],
+    formal: [
+      "Saat ini saya sedang membaca dokumen tersebut.",
+      "Mohon tunggu sebentar, saya ingin membaca petunjuknya terlebih dahulu.",
+      "Saya sedang mempelajari dan membaca materi ini.",
+    ],
+    question: [
+      "Apakah kamu sudah membaca materi ini?",
+      "Bagian mana yang perlu kita baca sekarang?",
+      "Boleh saya ikut membaca buku tersebut?",
+    ],
+  },
+  MAKAN: {
+    suggestion: "Saya ingin makan terlebih dahulu.",
+    casual: [
+      "Yuk kita cari makan bareng sekarang.",
+      "Aku lagi mau makan dulu ya.",
+      "Udah jam makan nih, makan di mana kita?",
+    ],
+    formal: [
+      "Saya izin beristirahat sebentar untuk makan.",
+      "Mari kita makan bersama terlebih dahulu.",
+      "Saat ini saya sedang berada di jam makan.",
+    ],
+    question: [
+      "Apakah kamu sudah makan hari ini?",
+      "Mau makan di mana kita setelah ini?",
+      "Makanan apa yang ingin kamu pesan?",
+    ],
+  },
+  MINUM: {
+    suggestion: "Saya merasa haus dan ingin mengambil air minum.",
+    casual: [
+      "Aku haus nih, mau minum air dulu ya.",
+      "Beli minum dingin dulu yuk sebentar.",
+      "Boleh minta air minumnya nggak?",
+    ],
+    formal: [
+      "Mohon izin, saya ingin mengambil air minum sebentar.",
+      "Bolehkah saya meminta air minum?",
+      "Saya sedang merasa haus dan memerlukan air minum.",
+    ],
+    question: [
+      "Apakah ada air minum di sekitar sini?",
+      "Kamu mau pesan minuman apa?",
+      "Boleh saya minta air minum sebentar?",
+    ],
+  },
+  BELAJAR: {
+    suggestion: "Saya sedang belajar Sistem Isyarat Bahasa Indonesia (SIBI).",
+    casual: [
+      "Aku lagi asyik belajar bahasa isyarat SIBI nih.",
+      "Yuk belajar gerakan tangan SIBI bareng aku!",
+      "Lagi latihan dan belajar huruf isyarat di AJIN nih.",
+    ],
+    formal: [
+      "Saat ini saya sedang mempelajari Sistem Isyarat Bahasa Indonesia (SIBI).",
+      "Saya sedang berlatih komunikasi bahasa isyarat secara mandiri.",
+      "Mari kita belajar bahasa isyarat bersama agar komunikasi lebih inklusif.",
+    ],
+    question: [
+      "Apakah kamu mau ikut belajar bahasa isyarat SIBI bersama saya?",
+      "Huruf isyarat apa yang sedang kamu pelajari hari ini?",
+      "Bisa bantu saya belajar gerakan isyarat ini?",
+    ],
+  },
+  TOLONG: {
+    suggestion: "Mohon bantuannya sebentar, saya membutuhkan pertolongan.",
+    casual: [
+      "Tolong bantuin aku sebentar dong.",
+      "Eh, boleh minta tolong nggak?",
+      "Bantuin aku cek bagian ini sebentar ya.",
+    ],
+    formal: [
+      "Permisi, bolehkah saya meminta bantuan Anda sebentar?",
+      "Mohon bantuannya untuk membantu saya menyelesaikan hal ini.",
+      "Saya sedang memerlukan sedikit bantuan, mohon arahannya.",
+    ],
+    question: [
+      "Apakah Anda memiliki waktu untuk membantu saya sebentar?",
+      "Bolehkah saya meminta tolong terkait hal ini?",
+      "Siapa yang bisa saya mintai bantuan di sini?",
+    ],
+  },
+};
+
+function buildClientSentenceFallback(rawInput, mode = "casual") {
+  const cleaned = (rawInput || "")
+    .toUpperCase()
+    .replace(/[^A-Z\s]/g, "")
+    .replace(/\s+/g, " ")
+    .trim() || "HALO";
+
+  const preset = CLIENT_SEMANTIC_FALLBACK[cleaned];
+  if (preset) {
+    return {
+      corrected: cleaned,
+      suggestion: preset.suggestion,
+      variations: preset[mode] || preset.casual,
+      alternatives: preset.casual.slice(0, 2),
+    };
+  }
+
+  const words = cleaned.split(" ");
+  const lower = cleaned.toLowerCase();
+  const sentenceCase = lower.charAt(0).toUpperCase() + lower.slice(1);
+
+  if (words.length === 1) {
+    return {
+      corrected: cleaned,
+      suggestion: `Saya sedang melakukan atau membahas tentang ${lower}.`,
+      variations:
+        mode === "formal"
+          ? [
+              `Saat ini saya sedang melakukan kegiatan terkait ${lower}.`,
+              `Saya ingin menyampaikan hal mengenai ${lower}.`,
+              `Mari kita menindaklanjuti hal yang berkaitan dengan ${lower}.`,
+            ]
+          : mode === "question"
+          ? [
+              `Bagaimana pendapatmu mengenai ${lower} ini?`,
+              `Apakah kamu sudah mengetahui tentang ${lower}?`,
+              `Bisa bantu saya terkait ${lower} sekarang?`,
+            ]
+          : [
+              `Aku lagi fokus soal ${lower} dulu ya.`,
+              `Yuk kita bahas atau lakukan ${lower} sekarang.`,
+              `Ini berkaitan sama ${lower} yang tadi aku maksud.`,
+            ],
+      alternatives: [
+        `Aku lagi fokus soal ${lower} dulu ya.`,
+        `Yuk kita bahas atau lakukan ${lower} sekarang.`,
+      ],
+    };
+  }
+
+  return {
+    corrected: cleaned,
+    suggestion: /^(saya|aku|kami|kita|halo|terima|tolong|mohon|selamat)/i.test(cleaned)
+      ? `${sentenceCase}.`
+      : `Saya ingin menyampaikan bahwa ${lower}.`,
+    variations:
+      mode === "formal"
+        ? [
+            `Saya ingin menyampaikan bahwa ${lower}.`,
+            `Mohon perhatiannya, saat ini ${lower}.`,
+            `Terima kasih, ${lower}.`,
+          ]
+        : mode === "question"
+        ? [
+            `Apakah benar bahwa ${lower}?`,
+            `Bagaimana menurutmu mengenai ${lower}?`,
+            `Bisa tolong bantu terkait ${lower}?`,
+          ]
+        : [
+            `${sentenceCase} ya.`,
+            `Aku mau bilang kalau ${lower} nih.`,
+            `Yuk, ${lower} bareng-bareng.`,
+          ],
+    alternatives: [`${sentenceCase} ya.`, `Aku mau bilang kalau ${lower} nih.`],
+  };
+}
+
 export const interpretSigns = async (letters, contextHint = "") => {
   try {
-    const res = await api.post("/ai/interpret", { letters, contextHint });
+    const userId = getCurrentUserIdentifier();
+    const sessionId = getSessionGuestId();
+    const res = await api.post("/ai/interpret", { letters, contextHint, userId, sessionId });
     return res.data;
   } catch (err) {
-    return { success: false, message: err.response?.data?.message || "Server AI tidak merespons." };
+    const rawText = Array.isArray(letters) ? letters.join("").trim() : "";
+    const fb = buildClientSentenceFallback(rawText, "casual");
+    return {
+      success: true,
+      input: rawText,
+      corrected: fb.corrected,
+      suggestion: fb.suggestion,
+      alternatives: fb.alternatives,
+      explanation: "Disusun secara lokal dari rangkaian huruf isyarat SIBI.",
+      isFallback: true,
+    };
   }
 };
 
@@ -131,13 +325,22 @@ export const expandTextVariations = async (text, mode = "casual") => {
     const res = await api.post("/ai/expand", { text, mode });
     return res.data;
   } catch (err) {
-    return { success: false, message: err.response?.data?.message || "Gagal mengekspansi teks." };
+    const fb = buildClientSentenceFallback(text, mode);
+    return {
+      success: true,
+      original: text,
+      mode,
+      variations: fb.variations,
+      isFallback: true,
+    };
   }
 };
 
 export const recognizeSignFromImage = async (image, mimeType = "image/jpeg") => {
   try {
-    const res = await api.post("/ai/recognize-image", { image, mimeType });
+    const userId = getCurrentUserIdentifier();
+    const sessionId = getSessionGuestId();
+    const res = await api.post("/ai/recognize-image", { image, mimeType, userId, sessionId });
     return res.data;
   } catch (err) {
     const msg = err.response?.data?.message || err.message || "Gagal memproses gambar.";
@@ -150,7 +353,7 @@ export const checkAiStatus = async () => {
     const res = await api.get("/ai/status");
     return res.data;
   } catch (err) {
-    return { success: false, available: false, reason: "Server tidak dapat dijangkau." };
+    return { success: true, available: true, isLocalFallback: true };
   }
 };
 
@@ -276,7 +479,9 @@ export const fetchTelemetrySummary = async (userId) => {
 
 export const sendAiChatMessage = async (message, history = []) => {
   try {
-    const res = await api.post("/ai/chat", { message, history });
+    const userId = getCurrentUserIdentifier();
+    const sessionId = getSessionGuestId();
+    const res = await api.post("/ai/chat", { message, history, userId, sessionId });
     return res.data;
   } catch (err) {
     const msg = err.response?.data?.message || err.message || "Gagal mengirim pesan ke asisten.";

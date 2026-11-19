@@ -2,7 +2,7 @@
 
 Platform Pembelajaran dan Pengenalan Sistem Isyarat Bahasa Indonesia (SIBI) Berbasis Computer Vision Secara Real-Time di Browser.
 
-Arsitektur: Monorepo Full-Stack JavaScript (React Vite + Express.js + Supabase PostgreSQL) dengan inferensi sisi klien (client-side) menggunakan MediaPipe Hands Landmark dan ONNX Runtime WebAssembly, kecerdasan generatif Google Gemini 2.5 Flash, serta antarmuka Playful Neobrutalism berdaya aksesibilitas tinggi.
+Arsitektur: Monorepo Full-Stack JavaScript (React Vite + Express.js + Supabase PostgreSQL) dengan inferensi sisi klien (client-side) menggunakan MediaPipe Hands Landmark dan ONNX Runtime WebAssembly, kecerdasan generatif Google Gemini 3.8 Flash, serta antarmuka Playful Neobrutalism berdaya aksesibilitas tinggi.
 
 ---
 
@@ -44,7 +44,7 @@ AJIN dirancang sebagai jembatan komunikasi inklusif antara komunitas Teman Tuli 
 
 6. **Asisten AI SIBI & Chatbot Global AJIN (`/asisten`)**
    - Widget asisten suara mengambang (*floating widget*) yang dapat diakses dari seluruh halaman aplikasi.
-   - Masukan suara (*Speech-to-Text id-ID*), konversi teks ke suara (*Text-to-Speech id-ID*), dan pemrosesan percakapan interaktif menggunakan Google Gemini 2.5 Flash.
+   - Masukan suara (*Speech-to-Text id-ID*), konversi teks ke suara (*Text-to-Speech id-ID*), dan pemrosesan percakapan interaktif menggunakan Google Gemini 3.8 Flash.
    - Tombol pintasan cerdas (*smart action buttons*) untuk navigasi cepat ke halaman kamus, latihan, atau kuis.
 
 7. **Dashboard Analitik & Evaluasi Empiris (`/analitik`)**

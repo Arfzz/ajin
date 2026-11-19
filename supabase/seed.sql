@@ -1,8 +1,9 @@
 -- AJIN (Aplikasi Jembatan Bahasa Isyarat dan Narasi)
--- Supabase PostgreSQL DDL & Seeder Alfabet SIBI (A-Z)
--- Skema Terpadu untuk Frontend, Backend, dan Fitur Terbaru (Telemetri, Pindai Foto, Voice Assistant & Chatbot AI)
+-- Supabase PostgreSQL DDL & Seeder Alfabet SIBI (A-Z) - Skema v2
+-- Catatan: Jika database sudah pernah dibuat dengan skema lama (user_id bertipe UUID),
+-- jalankan file supabase/migration_v2.sql di Supabase SQL Editor.
 
--- 1. Tabel 26 Alfabet SIBI
+-- 1. Tabel 26 Alfabet SIBI (Master Data)
 CREATE TABLE IF NOT EXISTS public.sibi_alphabets (
     id SERIAL PRIMARY KEY,
     letter VARCHAR(2) NOT NULL UNIQUE,
@@ -14,75 +15,104 @@ CREATE TABLE IF NOT EXISTS public.sibi_alphabets (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 2. Tabel Pengguna Aplikasi (Google OAuth & Sesi Login)
+-- 2. Tabel Pengguna Aplikasi (Google OAuth)
 CREATE TABLE IF NOT EXISTS public.users (
-    id TEXT PRIMARY KEY,
+    id TEXT PRIMARY KEY, -- Google OAuth sub ID (string numerik)
     name TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL,
     picture TEXT,
     role VARCHAR(20) DEFAULT 'student',
     provider VARCHAR(20) DEFAULT 'google',
+    last_login_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 2b. Tabel Profil (Kompatibilitas dengan Supabase Auth jika digunakan)
-CREATE TABLE IF NOT EXISTS public.profiles (
-    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-    name TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    role VARCHAR(20) DEFAULT 'student',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- 3. Tabel Progres Latihan Pengguna (Penguasaan Huruf)
+-- 3. Tabel Progres Penguasaan Huruf per Pengguna
 CREATE TABLE IF NOT EXISTS public.user_progress (
     id SERIAL PRIMARY KEY,
-    user_id TEXT NOT NULL,
-    alphabet_id INT NOT NULL REFERENCES public.sibi_alphabets(id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL, -- Mendukung Google ID maupun ID tamu ('guest_...')
+    alphabet_id INT REFERENCES public.sibi_alphabets(id) ON DELETE SET NULL,
+    letter VARCHAR(2) NOT NULL,
     is_mastered BOOLEAN DEFAULT FALSE,
-    best_confidence FLOAT DEFAULT 0.0,
+    best_confidence DOUBLE PRECISION DEFAULT 0.0,
     attempts_count INT DEFAULT 0,
+    success_count INT DEFAULT 0,
+    last_practiced_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    UNIQUE(user_id, alphabet_id)
+    UNIQUE(user_id, letter)
 );
 
--- 4. Tabel Telemetri Sesi (Pengujian Empiris untuk Skripsi & Dashboard Analitik)
--- Mendukung seluruh mode: 'practice' (Latih Kamera), 'quiz' (Kuis Eja), 'narrative' (Studio Narasi), dan 'photo' (Pindai Foto)
+-- 4. Tabel Telemetri Sesi (Latihan Kamera, Kuis Eja, Jembatan Narasi, Pindai Foto)
 CREATE TABLE IF NOT EXISTS public.session_telemetries (
     id SERIAL PRIMARY KEY,
-    user_id TEXT, -- Mendukung UUID maupun ID tamu string / null
-    session_type VARCHAR(50) NOT NULL, -- 'practice', 'narrative', 'quiz', 'photo'
+    user_id TEXT NOT NULL, -- Mendukung Google ID maupun ID tamu ('guest_...')
+    session_type VARCHAR(50) NOT NULL, -- 'practice', 'quiz', 'narrative', 'photo'
     target_label VARCHAR(10),
     predicted_label VARCHAR(10),
-    confidence FLOAT NOT NULL,
-    latency_ms FLOAT NOT NULL,
-    fps FLOAT NOT NULL,
-    lighting_cond VARCHAR(50),
+    confidence DOUBLE PRECISION NOT NULL,
+    latency_ms DOUBLE PRECISION NOT NULL DEFAULT 0,
+    fps DOUBLE PRECISION NOT NULL DEFAULT 0,
+    lighting_cond VARCHAR(50) DEFAULT 'normal',
     is_success BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 5. Tabel Riwayat Chatbot & Voice Assistant AJIN
+-- 5. Tabel Riwayat Pindai Foto (/foto)
+CREATE TABLE IF NOT EXISTS public.photo_scans (
+    id SERIAL PRIMARY KEY,
+    user_id TEXT,
+    session_id VARCHAR(100),
+    detected_letter VARCHAR(5),
+    is_sign BOOLEAN DEFAULT TRUE,
+    confidence DOUBLE PRECISION DEFAULT 0,
+    gesture_type VARCHAR(20) DEFAULT 'static',
+    description TEXT,
+    feedback TEXT,
+    alternatives TEXT[] DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 6. Tabel Riwayat Chatbot Asisten & Jembatan Narasi AI
 CREATE TABLE IF NOT EXISTS public.chat_messages (
     id SERIAL PRIMARY KEY,
     user_id TEXT,
     session_id VARCHAR(100),
+    source VARCHAR(30) DEFAULT 'assistant', -- 'assistant' atau 'narrative'
     user_message TEXT NOT NULL,
     ai_reply TEXT NOT NULL,
-    target_letter VARCHAR(2),
-    suggested_action VARCHAR(50), -- 'practice', 'dictionary', 'photo', 'quiz'
+    target_letter VARCHAR(5),
+    suggested_action VARCHAR(50),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 6. Indeks Performa untuk Kueri Skripsi & Analitik Real-Time
+-- 7. Indeks Performa
+CREATE INDEX IF NOT EXISTS idx_telemetries_user_id ON public.session_telemetries(user_id);
 CREATE INDEX IF NOT EXISTS idx_telemetries_session_type ON public.session_telemetries(session_type);
 CREATE INDEX IF NOT EXISTS idx_telemetries_created_at ON public.session_telemetries(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_telemetries_target_label ON public.session_telemetries(target_label);
 CREATE INDEX IF NOT EXISTS idx_progress_user ON public.user_progress(user_id);
+CREATE INDEX IF NOT EXISTS idx_progress_letter ON public.user_progress(letter);
+CREATE INDEX IF NOT EXISTS idx_photo_scans_user_id ON public.photo_scans(user_id);
+CREATE INDEX IF NOT EXISTS idx_photo_scans_created_at ON public.photo_scans(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_chat_user_id ON public.chat_messages(user_id);
 CREATE INDEX IF NOT EXISTS idx_chat_created_at ON public.chat_messages(created_at DESC);
 
--- 7. Seeder 26 Alfabet SIBI Resmi (A sampai Z)
+-- 8. View Ringkasan Rapor Belajar per Pengguna
+CREATE OR REPLACE VIEW public.v_user_letter_summary AS
+SELECT
+    st.user_id,
+    COALESCE(NULLIF(st.target_label, '-'), st.predicted_label) AS letter,
+    COUNT(*)::INT AS total_tests,
+    SUM(CASE WHEN st.is_success THEN 1 ELSE 0 END)::INT AS success_tests,
+    ROUND((AVG(CASE WHEN st.is_success THEN 100.0 ELSE 0.0 END))::NUMERIC, 1) AS accuracy_pct,
+    ROUND(AVG(st.confidence)::NUMERIC, 1) AS avg_confidence_pct,
+    MAX(st.created_at) AS last_tested_at
+FROM public.session_telemetries st
+WHERE COALESCE(NULLIF(st.target_label, '-'), st.predicted_label) IS NOT NULL
+GROUP BY st.user_id, COALESCE(NULLIF(st.target_label, '-'), st.predicted_label);
+
+-- 9. Seeder 26 Alfabet SIBI Resmi (A sampai Z)
 INSERT INTO public.sibi_alphabets (letter, gesture_type, description, difficulty, tips) VALUES
 ('A', 'static', 'Kepalkan empat jari rapat ke telapak tangan, ibu jari tegak lurus menempel di samping jari telunjuk.', 'easy', 'Pastikan ibu jari tidak menekuk ke depan empat jari agar tidak tertukar dengan huruf E.'),
 ('B', 'static', 'Buka empat jari lurus ke atas dan rapat. Tekuk ibu jari melintang di depan telapak tangan.', 'easy', 'Jaga empat jari tetap tegak lurus dan rapat vertikal.'),

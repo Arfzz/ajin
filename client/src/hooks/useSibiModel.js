@@ -190,7 +190,7 @@ async function getOrInitPipeline({ modelPath, handLandmarkerPath, labelsPath }) 
     const wasmResolvers = [
       "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm",
       "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm",
-      "/wasm",
+      "https://unpkg.com/@mediapipe/tasks-vision@0.10.14/wasm",
     ];
 
     for (const resolverUrl of wasmResolvers) {

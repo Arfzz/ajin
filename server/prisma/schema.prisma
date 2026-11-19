@@ -9,52 +9,92 @@ datasource db {
 }
 
 model User {
-  id           String             @id @default(uuid())
-  name         String
-  email        String             @unique
-  passwordHash String?
-  role         String             @default("student")
-  createdAt    DateTime           @default(now())
-  progress     UserProgress[]
-  telemetries  SessionTelemetry[]
+  id          String   @id
+  name        String
+  email       String   @unique
+  picture     String?
+  role        String   @default("student")
+  provider    String   @default("google")
+  lastLoginAt DateTime @default(now()) @map("last_login_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
 }
 
 model SibiAlphabet {
   id                Int            @id @default(autoincrement())
   letter            String         @unique
-  gestureType       String         // "static" (A-I, K-Y) atau "dynamic" (J, Z)
+  gestureType       String         @map("gesture_type")
   description       String
-  referenceImageUrl String?
+  referenceImageUrl String?        @map("reference_image_url")
   difficulty        String         @default("easy")
   tips              String?
+  createdAt         DateTime       @default(now()) @map("created_at")
   progress          UserProgress[]
+
+  @@map("sibi_alphabets")
 }
 
 model UserProgress {
-  id             Int          @id @default(autoincrement())
-  userId         String
-  alphabetId     Int
-  isMastered     Boolean      @default(false)
-  bestConfidence Float        @default(0)
-  attemptsCount  Int          @default(0)
-  updatedAt      DateTime     @updatedAt
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  alphabet       SibiAlphabet @relation(fields: [alphabetId], references: [id], onDelete: Cascade)
+  id              Int           @id @default(autoincrement())
+  userId          String        @map("user_id")
+  alphabetId      Int?          @map("alphabet_id")
+  letter          String
+  isMastered      Boolean       @default(false) @map("is_mastered")
+  bestConfidence  Float         @default(0) @map("best_confidence")
+  attemptsCount   Int           @default(0) @map("attempts_count")
+  successCount    Int           @default(0) @map("success_count")
+  lastPracticedAt DateTime      @default(now()) @map("last_practiced_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+  alphabet        SibiAlphabet? @relation(fields: [alphabetId], references: [id], onDelete: SetNull)
 
-  @@unique([userId, alphabetId])
+  @@unique([userId, letter])
+  @@map("user_progress")
 }
 
 model SessionTelemetry {
   id             Int      @id @default(autoincrement())
-  userId         String?
-  sessionType    String   // "practice" | "narrative" | "quiz"
-  targetLabel    String?
-  predictedLabel String?
+  userId         String   @map("user_id")
+  sessionType    String   @map("session_type")
+  targetLabel    String?  @map("target_label")
+  predictedLabel String?  @map("predicted_label")
   confidence     Float
-  latencyMs      Float
-  fps            Float
-  lightingCond   String?
-  isSuccess      Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  user           User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  latencyMs      Float    @default(0) @map("latency_ms")
+  fps            Float    @default(0)
+  lightingCond   String?  @default("normal") @map("lighting_cond")
+  isSuccess      Boolean  @default(true) @map("is_success")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@map("session_telemetries")
+}
+
+model PhotoScan {
+  id             Int      @id @default(autoincrement())
+  userId         String?  @map("user_id")
+  sessionId      String?  @map("session_id")
+  detectedLetter String?  @map("detected_letter")
+  isSign         Boolean  @default(true) @map("is_sign")
+  confidence     Float    @default(0)
+  gestureType    String?  @default("static") @map("gesture_type")
+  description    String?
+  feedback       String?
+  alternatives   String[] @default([])
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@map("photo_scans")
+}
+
+model ChatMessage {
+  id              Int      @id @default(autoincrement())
+  userId          String?  @map("user_id")
+  sessionId       String?  @map("session_id")
+  source          String   @default("assistant")
+  userMessage     String   @map("user_message")
+  aiReply         String   @map("ai_reply")
+  targetLetter    String?  @map("target_letter")
+  suggestedAction String?  @map("suggested_action")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("chat_messages")
 }
