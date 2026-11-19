@@ -72,15 +72,23 @@ export const updateProgress = async (req, res) => {
     memoryProgressStore.set(key, updated);
     saveProgressToFile(memoryProgressStore);
 
-    if (isSupabaseConfigured && supabase && userId !== "guest-user") {
-      await supabase.from("user_progress").upsert({
-        user_id: userId,
-        alphabet_id: alphabetId,
-        is_mastered: updated.isMastered,
-        best_confidence: updated.bestConfidence,
-        attempts_count: updated.attemptsCount,
-        updated_at: updated.updatedAt
-      });
+    const isValidUUID = (id) =>
+      typeof id === "string" &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+
+    if (isSupabaseConfigured && supabase && isValidUUID(userId)) {
+      try {
+        await supabase.from("user_progress").upsert({
+          user_id: userId,
+          alphabet_id: alphabetId,
+          is_mastered: updated.isMastered,
+          best_confidence: updated.bestConfidence,
+          attempts_count: updated.attemptsCount,
+          updated_at: updated.updatedAt
+        });
+      } catch (sbErr) {
+        console.warn("[AJIN Progress] Gagal upsert ke Supabase:", sbErr.message);
+      }
     }
 
     return res.json({

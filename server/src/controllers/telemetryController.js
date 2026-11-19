@@ -71,18 +71,27 @@ export const logTelemetry = async (req, res) => {
     // Simpan ke file disk agar tidak hilang saat server restart
     saveTelemetryToFile(telemetryLogs);
 
+    // Helper validasi UUID PostgreSQL
+    const isValidUUID = (id) =>
+      typeof id === "string" &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+
     if (isSupabaseConfigured && supabase) {
-      await supabase.from("session_telemetries").insert({
-        user_id: userId !== "guest-user" ? userId : null,
-        session_type: sessionType,
-        target_label: targetLabel,
-        predicted_label: predictedLabel,
-        confidence: logEntry.confidence,
-        latency_ms: logEntry.latencyMs,
-        fps: logEntry.fps,
-        lighting_cond: lightingCond,
-        is_success: logEntry.isSuccess
-      });
+      try {
+        await supabase.from("session_telemetries").insert({
+          user_id: isValidUUID(userId) ? userId : null,
+          session_type: sessionType,
+          target_label: targetLabel,
+          predicted_label: predictedLabel,
+          confidence: logEntry.confidence,
+          latency_ms: logEntry.latencyMs,
+          fps: logEntry.fps,
+          lighting_cond: lightingCond,
+          is_success: logEntry.isSuccess
+        });
+      } catch (supabaseErr) {
+        console.warn("[AJIN Telemetry] Gagal simpan ke Supabase, tetap tersimpan di lokal:", supabaseErr.message);
+      }
     }
 
     return res.json({
