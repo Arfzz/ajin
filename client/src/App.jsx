@@ -69,13 +69,8 @@ export function App() {
                     <span className="font-display font-black text-2xl text-ink tracking-tight">AJIN</span>
                   </div>
                   <p className="font-sans text-xs text-ink/70 max-w-sm font-medium leading-relaxed">
-                    Platform pembelajaran Sistem Isyarat Bahasa Indonesia (SIBI) 26 alfabet berbasis computer vision dan inferensi lokal di browser.
+                    Platform pembelajaran Sistem Isyarat Bahasa Indonesia (SIBI) 26 alfabet langsung lewat kamera di browser.
                   </p>
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    <span className="tag tag-yellow text-[9px]">26 Huruf SIBI</span>
-                    <span className="tag tag-mint text-[9px]">Inferensi 20-30 FPS</span>
-                    <span className="tag tag-cobalt text-[9px]">Sintesis Suara id-ID</span>
-                  </div>
                 </div>
 
                 {/* Nav Links Grid */}
@@ -99,16 +94,12 @@ export function App() {
                 </div>
               </div>
 
-              {/* Bottom Copyright & Tech Badges */}
+              {/* Bottom Copyright */}
               <div className="mt-10 pt-6 border-t-2 border-ink/15 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 font-mono text-[11px] text-ink/50 font-bold">
                 <div className="flex items-center gap-2">
                   <span>© 2026 AJIN</span>
                   <span>•</span>
                   <span>Sistem Isyarat Bahasa Indonesia (SIBI)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-mint" />
-                  <span>ONNX Runtime WebGL + MediaPipe</span>
                 </div>
               </div>
             </div>

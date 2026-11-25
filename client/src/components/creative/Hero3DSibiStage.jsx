@@ -795,11 +795,8 @@ export const Hero3DSibiStage = ({ isSimulationMode = true }) => {
                 {current.letter}
               </motion.div>
               <div>
-                <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-ink/75 block">
-                  Peraga Tangan 3D
-                </span>
                 <span
-                  className={`font-display font-black text-xs uppercase ${isDynamic ? "text-coral" : "text-cobalt"
+                  className={`font-display font-black text-sm uppercase ${isDynamic ? "text-coral" : "text-cobalt"
                     }`}
                 >
                   {isDynamic ? "Gerak Dinamis" : "Gestur Statis"}
@@ -808,13 +805,6 @@ export const Hero3DSibiStage = ({ isSimulationMode = true }) => {
             </div>
 
             <div className="flex items-center gap-2">
-              <span
-                className={`tag text-[9px] font-bold ${isSimulationMode ? "tag-yellow" : "tag-mint"
-                  }`}
-              >
-                {isSimulationMode ? "21 Titik Sendi" : "Kamera Siap"}
-              </span>
-
               <button
                 type="button"
                 onClick={handleSpeak}

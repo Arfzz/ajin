@@ -16,14 +16,10 @@ import {
   Camera,
   BookOpen,
   MessageSquare,
-  Zap,
   Shield,
   BarChart2,
   Award,
-  Layers,
   Volume2,
-  Activity,
-  Check,
   ArrowUpRight,
 } from "lucide-react";
 import { SIBI_ALPHABETS_FALLBACK } from "../services/fallbackData";
@@ -33,7 +29,6 @@ import ScrollReveal from "../components/reactbits/ScrollReveal";
 import MicroSlats from "../components/reactbits/MicroSlats";
 import { DecryptedText } from "../components/reactbits/DecryptedText";
 import { SpotlightCard } from "../components/reactbits/SpotlightCard";
-import { MagnetButton } from "../components/reactbits/MagnetButton";
 import {
   Hero3DSibiStage,
   HAND_CONNECTIONS,
@@ -251,7 +246,7 @@ const Hero = ({ isSimulationMode }) => {
             </p>
 
             {/* CTA: dua tombol dengan aksi spesifik */}
-            <div className="flex flex-wrap gap-3 mb-8">
+            <div className="flex flex-wrap gap-3">
               <Link to="/latihan" className="btn btn-coral text-base py-3.5 px-6 shadow-[4px_4px_0_#111]">
                 <Camera className="w-5 h-5 mr-2" aria-hidden="true" />
                 Buka Kamera &amp; Coba Huruf A
@@ -260,20 +255,6 @@ const Hero = ({ isSimulationMode }) => {
                 <BookOpen className="w-5 h-5 mr-2" aria-hidden="true" />
                 Buka Kamus 26 Huruf
               </Link>
-            </div>
-
-            {/* Tiga fakta singkat */}
-            <div className="flex flex-wrap gap-4">
-              {[
-                { icon: Zap, text: "Deteksi 25-30 FPS di browser", color: "text-yellow-dark" },
-                { icon: Shield, text: "Video kamera tidak diunggah", color: "text-mint" },
-                { icon: BarChart2, text: "Riwayat latihan tersimpan", color: "text-cobalt" },
-              ].map(({ icon: Icon, text, color }) => (
-                <span key={text} className="flex items-center gap-1.5 font-mono text-xs text-ink/75 font-bold">
-                  <Icon className={`w-3.5 h-3.5 ${color}`} aria-hidden="true" />
-                  {text}
-                </span>
-              ))}
             </div>
           </motion.div>
 
@@ -495,36 +476,17 @@ const HorizontalRoadmap = () => {
 
         {/* Header Bar + Progress Rail */}
         <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 mb-7 relative z-10">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-5">
-            <div>
-              <div className="inline-flex items-center gap-2 px-2.5 py-1 bg-yellow border-2 border-ink shadow-[2px_2px_0_#111] font-mono text-xs font-black uppercase mb-2.5">
-                <Activity className="w-3.5 h-3.5" />
-                <span>5 Ruang Belajar di AJIN</span>
-              </div>
-              <ScrollReveal
-                mode="enter"
-                effect="rise"
-                splitBy="words"
-                stagger={0.04}
-                duration={0.65}
-                textClassName="font-display font-black text-3xl sm:text-5xl text-ink tracking-tight leading-none"
-              >
-                Mulai dari kenal bentuk jari sampai lancar mengeja kalimat.
-              </ScrollReveal>
-            </div>
-
-            {/* Pita Navigasi Cepat 5 Tahap */}
-            <div className="flex flex-wrap items-center gap-1.5">
-              {modes.map((m) => (
-                <Link
-                  key={m.num}
-                  to={m.to}
-                  className="px-2.5 py-1.5 border-2 border-ink bg-paper-2 hover:bg-yellow font-mono text-[11px] font-black text-ink shadow-[2px_2px_0_#111] transition-transform hover:-translate-y-0.5"
-                >
-                  {m.num}. {m.title.split(" ")[0]}
-                </Link>
-              ))}
-            </div>
+          <div className="mb-5">
+            <ScrollReveal
+              mode="enter"
+              effect="rise"
+              splitBy="words"
+              stagger={0.04}
+              duration={0.65}
+              textClassName="font-display font-black text-3xl sm:text-5xl text-ink tracking-tight leading-none"
+            >
+              Mulai dari kenal bentuk jari sampai lancar mengeja kalimat.
+            </ScrollReveal>
           </div>
 
           {/* Kinetic Scroll Progress Bar */}
@@ -561,7 +523,6 @@ const HorizontalRoadmap = () => {
 const HowItWorks = () => {
   const containerRef = useRef(null);
   const inView = useInView(containerRef, { amount: 0.22, once: false });
-  const [manualStack, setManualStack] = useState(false);
   const [isDesktop, setIsDesktop] = useState(true);
 
   // State interaktif di dalam kartu langkah
@@ -610,7 +571,7 @@ const HowItWorks = () => {
     window.speechSynthesis.speak(u);
   };
 
-  const isStacked = !inView || manualStack;
+  const isStacked = !inView;
 
   const steps = [
     {
@@ -737,33 +698,17 @@ const HowItWorks = () => {
       className="py-24 bg-paper-2 border-t-[3px] border-b-[3px] border-ink relative overflow-hidden"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="flex items-end justify-between mb-16 flex-wrap gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <span className="tag tag-ink text-xs font-mono">
-                {isStacked ? "Susunan Kartu: Bertumpuk" : "Susunan Kartu: Terbuka"}
-              </span>
-            </div>
-            <ScrollReveal
-              mode="enter"
-              effect="skew"
-              splitBy="words"
-              stagger={0.05}
-              duration={0.7}
-              textClassName="font-display font-black text-ink leading-tight text-3xl sm:text-5xl lg:text-6xl"
-            >
-              Cara pakai AJIN dari buka kamera sampai kalimat pertama.
-            </ScrollReveal>
-          </div>
-
-          <MagnetButton
-            onClick={() => setManualStack(!manualStack)}
-            magnetStrength={0.28}
-            className="btn btn-yellow text-xs font-mono py-3 px-5 shadow-[4px_4px_0_#111] rounded-none flex items-center gap-2"
+        <div className="mb-16">
+          <ScrollReveal
+            mode="enter"
+            effect="skew"
+            splitBy="words"
+            stagger={0.05}
+            duration={0.7}
+            textClassName="font-display font-black text-ink leading-tight text-3xl sm:text-5xl lg:text-6xl"
           >
-            <Layers className="w-4 h-4 text-ink" />
-            <span>{manualStack ? "Buka 4 Kartu Langkah" : "Tumpuk Kembali Kartu"}</span>
-          </MagnetButton>
+            Cara pakai AJIN dari buka kamera sampai kalimat pertama.
+          </ScrollReveal>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 relative min-h-[420px]">
@@ -896,23 +841,18 @@ const Features = () => {
   return (
     <section className="py-24 bg-paper border-b-[3px] border-ink relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-12">
-          <div>
-            <span className="tag tag-cobalt mb-3 inline-block">Kenapa Nyaman Dipakai Latihan</span>
-            <ScrollReveal
-              mode="enter"
-              effect="rise"
-              splitBy="words"
-              stagger={0.04}
-              duration={0.65}
-              textClassName="font-display font-black text-3xl sm:text-5xl text-ink tracking-tight leading-none"
-            >
-              Deteksi jari langsung di perangkatmu tanpa kirim video ke luar.
-            </ScrollReveal>
-          </div>
-          <span className="font-mono text-xs font-bold text-ink/75">
-            MediaPipe 21 Titik Sendi • ONNX WebAssembly • Suara Bahasa Indonesia
-          </span>
+        <div className="mb-12">
+          <span className="tag tag-cobalt mb-3 inline-block">Kenapa Nyaman Dipakai Latihan</span>
+          <ScrollReveal
+            mode="enter"
+            effect="rise"
+            splitBy="words"
+            stagger={0.04}
+            duration={0.65}
+            textClassName="font-display font-black text-3xl sm:text-5xl text-ink tracking-tight leading-none"
+          >
+            Deteksi jari langsung di perangkatmu tanpa kirim video ke luar.
+          </ScrollReveal>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
@@ -1359,7 +1299,6 @@ const QuizTeaser = () => {
   const [challengeIdx, setChallengeIdx] = useState(0);
   const [selectedChoice, setSelectedChoice] = useState(null);
   const [isCorrect, setIsCorrect] = useState(false);
-  const [miniScore, setMiniScore] = useState(0);
 
   const currentChallenge = MINI_QUIZ_CHALLENGES[challengeIdx];
   const answerAlphabet =
@@ -1371,7 +1310,6 @@ const QuizTeaser = () => {
     setSelectedChoice(letter);
     if (letter === currentChallenge.answer) {
       setIsCorrect(true);
-      setMiniScore((s) => s + 50);
       confetti({
         particleCount: 45,
         spread: 55,
@@ -1409,14 +1347,9 @@ const QuizTeaser = () => {
             className="lg:col-span-7 bg-paper-2 p-6 sm:p-9 border-b-[3px] lg:border-b-0 lg:border-r-[3px] border-ink relative overflow-hidden"
           >
             <div className="flex flex-wrap items-center justify-between gap-2 mb-6 pb-3 border-b-2 border-ink">
-              <div className="flex items-center gap-2">
-                <span className="tag tag-yellow">Coba Tebak Isyarat</span>
-                <span className="font-mono text-xs font-bold text-ink/75">
-                  Soal {challengeIdx + 1}/{MINI_QUIZ_CHALLENGES.length}
-                </span>
-              </div>
-              <span className="px-2.5 py-1 bg-mint border-2 border-ink font-mono text-xs font-black text-ink shadow-[2px_2px_0_#111] tabular-nums">
-                Poin: +{miniScore} XP
+              <span className="tag tag-yellow">Coba Tebak Isyarat</span>
+              <span className="font-mono text-xs font-bold text-ink/75">
+                Soal {challengeIdx + 1}/{MINI_QUIZ_CHALLENGES.length}
               </span>
             </div>
 
@@ -1499,7 +1432,7 @@ const QuizTeaser = () => {
                 >
                   <span>
                     {isCorrect
-                      ? `Benar. Gambar jari di atas adalah huruf ${currentChallenge.answer}, melengkapi kata "${currentChallenge.word}" (+50 XP).`
+                      ? `Benar. Gambar jari di atas adalah huruf ${currentChallenge.answer}, melengkapi kata "${currentChallenge.word}".`
                       : `Bukan huruf ${selectedChoice}. Perhatikan lagi petunjuk lekukan jarinya dan pilih huruf lain.`}
                   </span>
                   {isCorrect && (
@@ -1626,22 +1559,12 @@ const FinalCTA = () => {
               Angkat satu tangan di depan kamera dan coba huruf pertamamu sekarang.
             </ScrollReveal>
 
-            <p className="font-sans text-base sm:text-xl font-bold text-ink/80 max-w-2xl mx-auto leading-relaxed mt-6 mb-10">
+            <p className="font-sans text-base sm:text-xl font-bold text-ink/85 max-w-2xl mx-auto leading-relaxed mt-6 mb-4">
               Mulai dari huruf A yang paling mudah: kepalkan empat jari, tegakkan ibu jari di samping telunjuk, dan tahan selama 1 detik sampai hurufnya terkunci.
             </p>
-          </div>
-
-          {/* 3 Guarantee Checklist Pills */}
-          <div className="flex flex-wrap justify-center gap-3 sm:gap-6 mb-10 font-mono text-xs sm:text-sm font-bold text-ink">
-            <span className="flex items-center gap-2 bg-paper px-3 py-1.5 border-2 border-ink shadow-[2px_2px_0_#111]">
-              <Check className="w-4 h-4 text-mint stroke-[3]" /> 26 Alfabet SIBI Lengkap
-            </span>
-            <span className="flex items-center gap-2 bg-paper px-3 py-1.5 border-2 border-ink shadow-[2px_2px_0_#111]">
-              <Check className="w-4 h-4 text-coral stroke-[3]" /> Diproses Lokal di Browser
-            </span>
-            <span className="flex items-center gap-2 bg-paper px-3 py-1.5 border-2 border-ink shadow-[2px_2px_0_#111]">
-              <Check className="w-4 h-4 text-cobalt stroke-[3]" /> Bisa Langsung Dibacakan Suara
-            </span>
+            <p className="font-sans text-sm sm:text-base font-medium text-ink/80 max-w-xl mx-auto leading-relaxed mb-10">
+              Seluruh panduan 26 huruf tersedia di kamus, kamera membaca gerakan langsung di perambanmu tanpa mengunggah video ke server, dan rangkaian katamu dapat langsung dibacakan dalam bahasa Indonesia.
+            </p>
           </div>
 
           {/* Action Buttons */}

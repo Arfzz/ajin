@@ -206,20 +206,6 @@ export const QuizPage = ({ modelHook }) => {
   const currentWord = quizWords[wordIndex] || "BUKU";
   const targetLetter = currentWord[letterIndex] || currentWord[0];
 
-  const totalLettersInSet = useMemo(
-    () => quizWords.reduce((acc, w) => acc + w.length, 0),
-    [quizWords]
-  );
-
-  const completedLettersBeforeCurrentWord = useMemo(
-    () => quizWords.slice(0, wordIndex).reduce((acc, w) => acc + w.length, 0),
-    [quizWords, wordIndex]
-  );
-
-  const currentProgressLetters = isCompleted
-    ? totalLettersInSet
-    : completedLettersBeforeCurrentWord + letterIndex;
-
   const targetAlphabetInfo = useMemo(
     () => SIBI_ALPHABETS_FALLBACK.find((a) => a.letter === targetLetter),
     [targetLetter]
@@ -372,9 +358,9 @@ export const QuizPage = ({ modelHook }) => {
 
   return (
     <div className="min-h-screen bg-paper text-ink pt-20 pb-20">
-      {/* Header Editorial & Papan Skor Ringkas */}
+      {/* Header Editorial */}
       <div className="border-b-[3px] border-ink bg-paper-2 py-7 px-4 sm:px-6">
-        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row lg:items-end justify-between gap-6">
+        <div className="max-w-7xl mx-auto">
           <div>
             <p className="font-mono text-xs font-black uppercase tracking-wider text-cobalt mb-1.5">
               KUIS EJA KATA // KAMERA LANGSUNG
@@ -385,36 +371,6 @@ export const QuizPage = ({ modelHook }) => {
             <p className="font-sans text-xs sm:text-sm text-ink/75 font-medium mt-2 max-w-2xl">
               Peragakan setiap huruf secara berurutan di depan kamera. Tahan posisi jari selama 1 detik hingga kotak huruf terkunci dan berpindah ke huruf berikutnya.
             </p>
-          </div>
-
-          {/* Papan Skor Brutalist 3 Sel (Fakta Sesi Nyata) */}
-          <div className="grid grid-cols-3 border-[2.5px] border-ink bg-paper shadow-[4px_4px_0_#111] font-mono shrink-0">
-            <div className="px-4 py-2.5 bg-yellow border-r-2 border-ink">
-              <span className="text-[10px] font-black uppercase text-ink/70 block leading-none mb-1">
-                KATA AKTIF
-              </span>
-              <span className="text-lg sm:text-xl font-black text-ink tabular-nums leading-none">
-                {wordIndex + 1} / {quizWords.length}
-              </span>
-            </div>
-
-            <div className="px-4 py-2.5 bg-mint border-r-2 border-ink">
-              <span className="text-[10px] font-black uppercase text-ink/70 block leading-none mb-1">
-                TERKUNCI
-              </span>
-              <span className="text-lg sm:text-xl font-black text-ink tabular-nums leading-none">
-                {currentProgressLetters} / {totalLettersInSet}
-              </span>
-            </div>
-
-            <div className="px-4 py-2.5 bg-paper">
-              <span className="text-[10px] font-black uppercase text-ink/60 block leading-none mb-1">
-                DURASI
-              </span>
-              <span className="text-lg sm:text-xl font-black text-ink tabular-nums leading-none">
-                {formatTimer(timerSeconds)}
-              </span>
-            </div>
           </div>
         </div>
       </div>

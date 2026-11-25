@@ -5,13 +5,10 @@ import {
   ChevronLeft,
   ChevronRight,
   CheckCircle2,
-  Award,
   Lightbulb,
-  Flame,
 } from "lucide-react";
 
 import { WebcamCanvas } from "../components/vision/WebcamCanvas";
-import { TelemetryBar } from "../components/vision/TelemetryBar";
 import { SIBI_ALPHABETS_FALLBACK } from "../services/fallbackData";
 import { saveProgress, sendTelemetry } from "../services/api";
 import {
@@ -158,9 +155,6 @@ export const PracticePage = ({ modelHook }) => {
     return idx >= 0 ? idx : 0;
   });
 
-  const [successCount, setSuccessCount] = useState(0);
-  const [streakCount, setStreakCount] = useState(0);
-  const [totalXp, setTotalXp] = useState(0);
   const [lastSuccessTime, setLastSuccessTime] = useState(null);
   const [saveNotification, setSaveNotification] = useState(null);
 
@@ -209,9 +203,6 @@ export const PracticePage = ({ modelHook }) => {
     });
 
     if (isMatch) {
-      setSuccessCount((prev) => prev + 1);
-      setStreakCount((prev) => prev + 1);
-      setTotalXp((prev) => prev + 25);
       setLastSuccessTime(new Date().toLocaleTimeString());
 
       confetti({
@@ -231,10 +222,9 @@ export const PracticePage = ({ modelHook }) => {
 
       setSaveNotification({
         isSuccess: true,
-        message: `Bagus! Huruf ${currentAlphabet.letter} berhasil dikunci dan dicatat ke Rapor Belajar (+25 XP).`,
+        message: `Bagus! Huruf ${currentAlphabet.letter} berhasil dikunci dan dicatat ke Rapor Belajar.`,
       });
     } else {
-      setStreakCount(0);
       saveProgress({
         letter: currentAlphabet.letter,
         alphabetId: currentAlphabet.id,
@@ -276,9 +266,6 @@ export const PracticePage = ({ modelHook }) => {
     });
 
     if (isMatch) {
-      setSuccessCount((prev) => prev + 1);
-      setStreakCount((prev) => prev + 1);
-      setTotalXp((prev) => prev + 25);
       setLastSuccessTime(new Date().toLocaleTimeString());
       confetti({ particleCount: 35, spread: 50 });
     }
@@ -298,7 +285,7 @@ export const PracticePage = ({ modelHook }) => {
     <div className="min-h-screen bg-paper text-ink pt-16 pb-16">
       {/* Top Banner Header */}
       <div className="border-b-[3px] border-ink bg-paper-2 py-6 px-4 sm:px-6">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto">
           <div>
             <h1 className="font-display font-black text-2xl sm:text-4xl text-ink tracking-tight">
               Latihan Mandiri: <span className="highlight">Huruf {currentAlphabet.letter}</span>
@@ -306,45 +293,6 @@ export const PracticePage = ({ modelHook }) => {
             <p className="font-sans text-xs sm:text-sm text-ink/80 font-medium mt-1">
               Tiru bentuk tangan pada kartu referensi, lalu tahan posisi stabil selama 1 detik di dalam kotak kamera.
             </p>
-          </div>
-
-          {/* Gamified Stat Badges */}
-          <div className="flex flex-wrap items-center gap-2.5">
-            <div className="border-2 border-ink bg-yellow px-3.5 py-1.5 shadow-[3px_3px_0_#111] flex items-center gap-2 font-mono">
-              <Flame className="w-4 h-4 text-coral fill-coral" aria-hidden="true" />
-              <div>
-                <span className="text-[10px] uppercase font-bold text-ink/75 block leading-none">
-                  Streak
-                </span>
-                <span className="text-base font-black text-ink leading-tight tabular-nums">
-                  {streakCount}x
-                </span>
-              </div>
-            </div>
-
-            <div className="border-2 border-ink bg-mint px-3.5 py-1.5 shadow-[3px_3px_0_#111] flex items-center gap-2 font-mono">
-              <Award className="w-4 h-4 text-ink" aria-hidden="true" />
-              <div>
-                <span className="text-[10px] uppercase font-bold text-ink/75 block leading-none">
-                  Total EXP
-                </span>
-                <span className="text-base font-black text-ink leading-tight tabular-nums">
-                  +{totalXp} XP
-                </span>
-              </div>
-            </div>
-
-            <div className="border-2 border-ink bg-paper px-3.5 py-1.5 shadow-[3px_3px_0_#111] flex items-center gap-2 font-mono">
-              <CheckCircle2 className="w-4 h-4 text-cobalt" aria-hidden="true" />
-              <div>
-                <span className="text-[10px] uppercase font-bold text-ink/75 block leading-none">
-                  Selesai
-                </span>
-                <span className="text-base font-black text-ink leading-tight tabular-nums">
-                  {successCount}x
-                </span>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -517,16 +465,6 @@ export const PracticePage = ({ modelHook }) => {
               modelHook={modelHook}
               onLetterLocked={handleLetterLocked}
               className="w-full"
-            />
-
-            <TelemetryBar
-              fps={modelHook.telemetry.fps}
-              latencyMs={modelHook.telemetry.latencyMs}
-              confidence={modelHook.telemetry.confidence}
-              predictedLetter={modelHook.telemetry.predictedLetter}
-              isHolding={modelHook.telemetry.isHolding}
-              isLocked={modelHook.telemetry.isLocked}
-              isSimulationMode={modelHook.isSimulationMode}
             />
 
             {/* Live Coaching & Quick Actions Bar */}

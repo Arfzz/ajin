@@ -334,14 +334,6 @@ export const WebcamCanvas = ({
           </div>
         )}
 
-        {/* Live Indicator Top Left */}
-        <div className="absolute top-3 left-3 z-30 flex items-center gap-2">
-          <span className="sticker sticker-mint text-[10px] font-mono px-2 py-0.5 shadow-[2px_2px_0_#111]">
-            <span className="w-2 h-2 rounded-full bg-ink inline-block mr-1.5 animate-pulse" />
-            {cameraActive ? "KAMERA AKTIF (640x480)" : "KAMERA NONAKTIF"}
-          </span>
-        </div>
-
         {/* Prediction Box Top Right */}
         <div className="absolute top-3 right-3 z-30 flex items-center gap-2">
           <div className="border-2 border-ink bg-paper px-3 py-1 shadow-[3px_3px_0_#111] flex items-center gap-2 font-mono text-xs">
@@ -368,17 +360,14 @@ export const WebcamCanvas = ({
               Cermin: {isMirrored ? "AKTIF" : "NONAKTIF"}
             </button>
 
-            <span className="tag tag-mint text-[11px] font-mono py-1 px-2.5">
-              21 Keypoints SIBI
-            </span>
-
             <button
               onClick={() => setUseRoiCrop(!useRoiCrop)}
+              title="Pilih apakah kamera membaca tangan hanya di dalam kotak tengah atau seluruh layar"
               className={`btn text-[11px] font-mono py-1.5 px-3 ${
                 useRoiCrop ? "btn-cobalt" : "bg-paper-2 hover:bg-paper-3"
               }`}
             >
-              Area ROI: {useRoiCrop ? "AKTIF" : "NONAKTIF"}
+              {useRoiCrop ? "Deteksi di Dalam Kotak Saja" : "Deteksi di Seluruh Layar"}
             </button>
           </div>
 
