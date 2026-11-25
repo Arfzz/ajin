@@ -38,42 +38,41 @@ async function savePhotoScanToSupabase({
   if (!isSupabaseConfigured || !supabase || !result) return;
   const normalizedUserId = String(userId || "guest-user").trim();
 
-  const { error: scanErr } = await supabase.from("photo_scans").insert({
-    user_id: normalizedUserId,
-    session_id: sessionId ? String(sessionId).trim() : null,
-    detected_letter: result.letter ? String(result.letter).slice(0, 5) : "?",
-    is_sign: Boolean(result.isSign),
-    confidence: Number(result.confidence || 0),
-    gesture_type: result.gestureType === "dynamic" ? "dynamic" : "static",
-    description: result.description || "",
-    feedback: result.feedback || "",
-    alternatives: Array.isArray(result.alternatives) ? result.alternatives : [],
-  });
+  const [scanRes, telRes] = await Promise.all([
+    supabase.from("photo_scans").insert({
+      user_id: normalizedUserId,
+      session_id: sessionId ? String(sessionId).trim() : null,
+      detected_letter: result.letter ? String(result.letter).slice(0, 5) : "?",
+      is_sign: Boolean(result.isSign),
+      confidence: Number(result.confidence || 0),
+      gesture_type: result.gestureType === "dynamic" ? "dynamic" : "static",
+      description: result.description || "",
+      feedback: result.feedback || "",
+      alternatives: Array.isArray(result.alternatives) ? result.alternatives : [],
+    }),
+    supabase.from("session_telemetries").insert({
+      user_id: normalizedUserId,
+      session_type: "photo",
+      target_label: result.isSign && /^[A-Z]$/.test(result.letter) ? result.letter : null,
+      predicted_label: result.letter ? String(result.letter).slice(0, 10) : "?",
+      confidence: Number(result.confidence || 0),
+      latency_ms: Number(latencyMs || 0),
+      fps: 0,
+      lighting_cond: "photo-upload",
+      is_success: Boolean(result.isSign),
+    }),
+  ]);
 
-  if (scanErr) {
+  if (scanRes.error) {
     console.error(
-      `[AJIN AI] Gagal simpan photo_scans ke Supabase (${scanErr.code || "ERR"}):`,
-      scanErr.message
+      `[AJIN AI] Gagal simpan photo_scans ke Supabase (${scanRes.error.code || "ERR"}):`,
+      scanRes.error.message
     );
   }
-
-  // Rekam juga ringkasan ke session_telemetries dengan session_type = 'photo'
-  const { error: telErr } = await supabase.from("session_telemetries").insert({
-    user_id: normalizedUserId,
-    session_type: "photo",
-    target_label: result.isSign && /^[A-Z]$/.test(result.letter) ? result.letter : null,
-    predicted_label: result.letter ? String(result.letter).slice(0, 10) : "?",
-    confidence: Number(result.confidence || 0),
-    latency_ms: Number(latencyMs || 0),
-    fps: 0,
-    lighting_cond: "photo-upload",
-    is_success: Boolean(result.isSign),
-  });
-
-  if (telErr) {
+  if (telRes.error) {
     console.error(
-      `[AJIN AI] Gagal simpan telemetri foto ke Supabase (${telErr.code || "ERR"}):`,
-      telErr.message
+      `[AJIN AI] Gagal simpan telemetri foto ke Supabase (${telRes.error.code || "ERR"}):`,
+      telRes.error.message
     );
   }
 }
@@ -86,41 +85,71 @@ function getGeminiClient() {
   return new GoogleGenerativeAI(apiKey.trim());
 }
 
-// Strategi Hibrida Model Gemini (terverifikasi aktif 200 OK pada API Key):
-// - Tier "quality": gemini-3.8-flash untuk analisis foto multimodal, chatbot, dan penyusunan kuis
-// - Tier "fast":    gemini-3.7-flash -> gemini-3-flash-preview untuk respons narasi cepat
-const QUALITY_MODEL_CANDIDATES = [
+// Konfigurasi kandidat model berdasarkan hasil uji live:
+// gemini-3-flash-preview dengan thinkingLevel "minimal" + JSON mode merespons ~2 detik dan stabil
+// untuk teks maupun gambar multimodal, sementara gemini-3.1-flash-lite-preview & gemini-3.8-flash menjadi cadangan.
+const MODEL_CANDIDATES = [
   process.env.GEMINI_MODEL,
-  "gemini-3.8-flash",
-  "gemini-3.7-flash",
   "gemini-3-flash-preview",
-  "gemini-3.1-flash-lite",
+  "gemini-3.1-flash-lite-preview",
+  "gemini-3.8-flash",
 ].filter(Boolean);
 
-const FAST_MODEL_CANDIDATES = [
-  process.env.GEMINI_MODEL,
-  "gemini-3.7-flash",
-  "gemini-3-flash-preview",
-  "gemini-3.8-flash",
-  "gemini-3.1-flash-lite",
-].filter(Boolean);
+const PRIMARY_QUALITY_MODEL = MODEL_CANDIDATES[0] || "gemini-3-flash-preview";
+const PRIMARY_FAST_MODEL = MODEL_CANDIDATES[0] || "gemini-3-flash-preview";
 
-const PRIMARY_QUALITY_MODEL = QUALITY_MODEL_CANDIDATES[0] || "gemini-3.8-flash";
-const PRIMARY_FAST_MODEL = FAST_MODEL_CANDIDATES[0] || "gemini-3.7-flash";
+function buildGenerationConfig(modelName, jsonMode = true) {
+  const config = {};
+  if (jsonMode) {
+    config.responseMimeType = "application/json";
+  }
+  // thinkingLevel "minimal" didukung di seri 3.0 Flash (~2s); di 3.8 Flash memicu 400 Invalid Argument
+  if (modelName.includes("gemini-3-flash")) {
+    config.thinkingConfig = { thinkingLevel: "minimal" };
+  }
+  return config;
+}
+
+async function withTimeout(promise, timeoutMs, label) {
+  let timer;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timer = setTimeout(() => {
+          const err = new Error(`Model ${label} melebihi batas waktu ${timeoutMs}ms.`);
+          err.status = 408;
+          reject(err);
+        }, timeoutMs);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 async function generateWithGemini(contents, tier = "fast") {
   const genAI = getGeminiClient();
-  const candidates = tier === "quality" ? QUALITY_MODEL_CANDIDATES : FAST_MODEL_CANDIDATES;
+  const perAttemptMs = tier === "vision" ? 18000 : 12000;
   let lastError = null;
 
-  for (const modelName of candidates) {
+  for (const modelName of MODEL_CANDIDATES) {
     try {
-      const model = genAI.getGenerativeModel({ model: modelName });
-      const result = await model.generateContent(contents);
+      const model = genAI.getGenerativeModel({
+        model: modelName,
+        generationConfig: buildGenerationConfig(modelName, true),
+      });
+      const result = await withTimeout(
+        model.generateContent(contents),
+        perAttemptMs,
+        modelName
+      );
       return result.response.text().trim();
     } catch (err) {
       lastError = err;
-      console.warn(`[AJIN Gemini] Model ${modelName} gagal (${err.status || err.message}), mencoba cadangan...`);
+      console.warn(
+        `[AJIN Gemini] Model ${modelName} gagal (${err.status || err.message}), mencoba cadangan...`
+      );
     }
   }
 
@@ -795,32 +824,26 @@ export const recognizeSignFromImage = async (req, res) => {
       },
     };
 
-    const prompt = `Kamu adalah pakar bahasa isyarat Sistem Isyarat Bahasa Indonesia (SIBI) dan penglihatan komputer (computer vision) untuk aplikasi AJIN.
+    const prompt = `Analisis foto tangan untuk abjad Sistem Isyarat Bahasa Indonesia (SIBI, huruf A sampai Z).
 
-Tugasmu adalah menganalisis foto tangan ini yang membentuk alfabet SIBI (A sampai Z).
+Tugas:
+1. Tentukan apakah foto menampilkan gestur tangan manusia ("isSign": true/false).
+2. Jika ya, kenali huruf SIBI (A-Z), estimasi keyakinan (0-100), tipe gestur ("static" atau "dynamic" untuk J/Z).
+3. Tulis "description" singkat (1 kalimat posisi jari yang terlihat) dan "feedback" praktis (1 kalimat koreksi jari agar lebih tepat) WAJIB dalam Bahasa Indonesia.
+4. Berikan maksimal 3 huruf alternatif di "alternatives" jika gesturnya mirip huruf lain.
 
-Lakukan analisis seksama terhadap:
-1. Huruf SIBI apa yang dibentuk oleh tangan pada foto (A-Z)?
-2. Tingkat keyakinan / confidence (persentase bilangan bulat 0-100).
-3. Tipe gestur: "static" (statis) atau "dynamic" (dinamis, seperti J atau Z).
-4. Deskripsi posisi jemari yang teramati pada foto (misal: posisi ibu jari, telunjuk, jari tengah, kelingking).
-5. Saran / feedback presisi: apakah posisinya sudah akurat sesuai standar SIBI atau ada koreksi jari yang perlu diperbaiki agar lebih jelas terbaca.
-6. Huruf alternatif (jika gesturnya ambigu atau mirip dengan huruf lain, misal K dengan V/Y, atau M dengan N/S).
-
-Jika foto BUKAN gestur tangan manusia atau tidak terbaca sama sekali, berikan "isSign": false dan jelaskan pada kolom "feedback".
-
-WAJIB balas HANYA dalam format JSON valid berikut tanpa blok markdown tambahan dan tanpa teks lain di luar kurung kurawal:
+Balas HANYA JSON valid:
 {
   "isSign": true,
-  "letter": "<HURUF A-Z>",
-  "confidence": <angka 0-100>,
-  "gestureType": "<static atau dynamic>",
-  "description": "<deskripsi posisi jemari>",
-  "feedback": "<masukan ketepatan posisi jari>",
-  "alternatives": ["<huruf mirip>", "..."]
+  "letter": "A-Z atau ?",
+  "confidence": 0-100,
+  "gestureType": "static atau dynamic",
+  "description": "deskripsi singkat Bahasa Indonesia",
+  "feedback": "saran singkat Bahasa Indonesia",
+  "alternatives": ["X"]
 }`;
 
-    const responseText = await generateWithGemini([prompt, imagePart], "quality");
+    const responseText = await generateWithGemini([prompt, imagePart], "vision");
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       throw new Error("Gagal membaca struktur respons analisis dari model.");

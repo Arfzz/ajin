@@ -340,9 +340,19 @@ export const recognizeSignFromImage = async (image, mimeType = "image/jpeg") => 
   try {
     const userId = getCurrentUserIdentifier();
     const sessionId = getSessionGuestId();
-    const res = await api.post("/ai/recognize-image", { image, mimeType, userId, sessionId });
+    const res = await api.post(
+      "/ai/recognize-image",
+      { image, mimeType, userId, sessionId },
+      { timeout: 45000 }
+    );
     return res.data;
   } catch (err) {
+    if (err.code === "ECONNABORTED" || String(err.message || "").toLowerCase().includes("timeout")) {
+      return {
+        success: false,
+        message: "Analisis foto memakan waktu terlalu lama. Silakan klik tombol pindai lagi atau pilih foto dengan ukuran lebih kecil.",
+      };
+    }
     const msg = err.response?.data?.message || err.message || "Gagal memproses gambar.";
     return { success: false, message: msg };
   }

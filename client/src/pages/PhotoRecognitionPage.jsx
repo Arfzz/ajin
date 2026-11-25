@@ -59,16 +59,28 @@ export const PhotoRecognitionPage = () => {
     }
   };
 
-  // Tangkap satu frame foto dari webcam
+  // Tangkap satu frame foto dari webcam (dikecilkan ke maks 640px agar proses AI cepat)
   const captureSnapshot = () => {
     if (!videoRef.current) return;
     const video = videoRef.current;
+    let width = video.videoWidth || 640;
+    let height = video.videoHeight || 480;
+    const maxDim = 640;
+    if (width > maxDim || height > maxDim) {
+      if (width >= height) {
+        height = Math.round((height * maxDim) / width);
+        width = maxDim;
+      } else {
+        width = Math.round((width * maxDim) / height);
+        height = maxDim;
+      }
+    }
     const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
+    canvas.width = width;
+    canvas.height = height;
     const ctx = canvas.getContext("2d");
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const base64 = canvas.toDataURL("image/jpeg", 0.9);
+    ctx.drawImage(video, 0, 0, width, height);
+    const base64 = canvas.toDataURL("image/jpeg", 0.78);
 
     setSelectedImage(base64);
     setMimeType("image/jpeg");
@@ -92,8 +104,8 @@ export const PhotoRecognitionPage = () => {
     setIsCameraActive(false);
   };
 
-  // Kompresi otomatis gambar ke maksimal 1024px (JPEG ~150-300 KB) agar cepat dan aman dari batas payload Vercel
-  const compressDataUrl = (dataUrl, maxDimension = 1024, quality = 0.82) =>
+  // Kompresi otomatis gambar ke maksimal 640px (JPEG ~40-80 KB) agar cepat dipindai & aman dari timeout
+  const compressDataUrl = (dataUrl, maxDimension = 640, quality = 0.78) =>
     new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
